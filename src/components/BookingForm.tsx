@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -14,37 +14,97 @@ import {
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 
+import { submitBookingRequest } from "@/actions/booking";
+
 export default function BookingForm() {
-  // This stores the currently selected date in the component's memory
   const [date, setDate] = React.useState<Date>();
+  const [email, setEmail] = React.useState("");
+  const [phone, setPhone] = React.useState(""); // 1. Added phone state
+  const [name, setName] = React.useState("");
+
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [message, setMessage] = React.useState("");
+
+  async function handleSubmit() {
+    // 2. Updated validation to require the phone number
+    if (!email || !phone || !name || !date) {
+      setMessage("Please fill out all fields.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setMessage("");
+
+    // 3. Passing all 4 arguments to the server action!
+    const result = await submitBookingRequest(
+      email,
+      phone,
+      name,
+      date.toISOString(),
+    );
+
+    setMessage(result.message);
+    setIsSubmitting(false);
+
+    if (result.success) {
+      setEmail("");
+      setPhone("");
+      setName("");
+      setDate(undefined);
+    }
+  }
 
   return (
     <div className="mx-auto w-full max-w-md space-y-6 text-left mt-8">
-      {/* Task 102.3: Parent & Student Inputs */}
+      {message && (
+        <div
+          className={`p-3 text-sm rounded-md ${message.includes("success") ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}
+        >
+          {message}
+        </div>
+      )}
+
       <div className="space-y-4">
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700">
             Parent's Email
           </label>
-          <Input placeholder="name@example.com" />
+          <Input
+            placeholder="name@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+
+        {/* 4. Added the new Phone Input Field */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-700">
+            Parent's Phone
+          </label>
+          <Input
+            placeholder="(902) 555-0123"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
         </div>
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700">
             Student's Name
           </label>
-          <Input placeholder="Jane Doe" />
+          <Input
+            placeholder="Jane Doe"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
         </div>
       </div>
 
-      {/* Task 102.4: The Date Picker */}
       <div className="space-y-2 flex flex-col">
         <label className="text-sm font-medium text-slate-700">
           Select First Lesson Date
         </label>
         <Popover>
-          {/* Tell TypeScript to ignore the React 19 mismatch for the popup trigger */}
-          {/* @ts-ignore */}
           <PopoverTrigger
             className={buttonVariants({
               variant: "outline",
@@ -54,13 +114,9 @@ export default function BookingForm() {
             <CalendarIcon className="mr-2 h-4 w-4" />
             {date ? format(date, "PPP") : <span>Pick a date</span>}
           </PopoverTrigger>
+
           <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              /* We removed initialFocus here because the new version doesn't need it */
-            />
+            <Calendar mode="single" selected={date} onSelect={setDate} />
           </PopoverContent>
         </Popover>
       </div>
@@ -68,8 +124,17 @@ export default function BookingForm() {
       <Button
         size="lg"
         className="w-full bg-slate-900 text-white hover:bg-slate-800 mt-4"
+        onClick={handleSubmit}
+        disabled={isSubmitting}
       >
-        Confirm Request
+        {isSubmitting ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Saving...
+          </>
+        ) : (
+          "Confirm Request"
+        )}
       </Button>
     </div>
   );
