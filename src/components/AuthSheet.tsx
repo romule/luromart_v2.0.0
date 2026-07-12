@@ -5,8 +5,8 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { registerParent, loginParent } from "@/actions/auth";
 
-import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -24,21 +24,21 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
-// 1. The Golden Standard Validation Rules (Zod)
 const formSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  name: z.string().optional(),
   email: z.string().email({ message: "Please enter a valid email address." }),
-  phone: z.string().min(10, { message: "Please enter a valid phone number." }),
+  phone: z.string().optional(),
   password: z
     .string()
     .min(6, { message: "Password must be at least 6 characters." }),
 });
 
 export default function AuthSheet() {
-  const [isLogin, setIsLogin] = React.useState(false);
+  // 1. Changed to 'true' so Login is the default view
+  const [isLogin, setIsLogin] = React.useState(true);
 
-  // 2. Wire up the strict form
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -49,34 +49,48 @@ export default function AuthSheet() {
     },
   });
 
-  // 3. What happens when they click Submit
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log("Validated Data Ready for Supabase:", values);
-    // Next step: We will connect this to Supabase Auth!
+  // 2. The updated submission logic wiring
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    try {
+      if (!isLogin) {
+        // Handle Registration
+        await registerParent(values);
+        alert("Success! Your parent portal is created.");
+        // Next: We will add the redirect to the Cabinet here soon!
+      } else {
+        // Handle Login
+        await loginParent(values);
+        alert("Welcome back! You are logged in.");
+        // Next: We will add the redirect to the Cabinet here soon!
+      }
+    } catch (error: any) {
+      alert(error.message || "Something went wrong.");
+    }
   }
 
   return (
     <Sheet>
-      {/* Bulletproof Trigger: No 'asChild', no TS errors, perfectly styled */}
       <SheetTrigger className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 disabled:pointer-events-none disabled:opacity-50 bg-slate-900 text-slate-50 shadow hover:bg-slate-800 h-10 px-4 py-2">
         Sign In / Register
       </SheetTrigger>
 
-      <SheetContent className="sm:max-w-[400px]">
-        <SheetHeader>
-          <SheetTitle>
-            {isLogin ? "Welcome Back" : "Create Parent Portal"}
+      {/* Added some padding to the content block for breathing room */}
+      <SheetContent className="sm:max-w-[400px] p-6 flex flex-col">
+        <SheetHeader className="mb-6">
+          <SheetTitle className="text-2xl">
+            {isLogin ? "Welcome Back" : "Create Account"}
           </SheetTitle>
-          <SheetDescription>
+          <SheetDescription className="text-base">
             {isLogin
               ? "Sign in to manage your student's schedule."
-              : "Register to book art classes and manage your students."}
+              : "Register for a parent portal to book classes."}
           </SheetDescription>
         </SheetHeader>
 
-        <div className="mt-6">
+        <div className="flex-1">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Increased spacing between form fields */}
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               {!isLogin && (
                 <>
                   <FormField
@@ -140,22 +154,25 @@ export default function AuthSheet() {
                 )}
               />
 
-              <Button type="submit" className="w-full mt-4">
-                {isLogin ? "Sign In" : "Create Account"}
+              {/* Taller button with top margin to separate it from inputs */}
+              <Button type="submit" className="w-full h-12 mt-4 text-base">
+                {isLogin ? "Sign In" : "Register"}
               </Button>
             </form>
           </Form>
+        </div>
 
-          <div className="mt-4 text-center text-sm">
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-slate-600 hover:text-slate-900 underline"
-            >
-              {isLogin
-                ? "Need an account? Register here."
-                : "Already have an account? Sign in."}
-            </button>
-          </div>
+        {/* Sticky footer toggle */}
+        <div className="mt-8 pt-4 border-t text-center">
+          <button
+            type="button"
+            onClick={() => setIsLogin(!isLogin)}
+            className="text-sm text-slate-600 hover:text-slate-900 font-medium"
+          >
+            {isLogin
+              ? "Don't have an account? Register here."
+              : "Already have an account? Sign in."}
+          </button>
         </div>
       </SheetContent>
     </Sheet>
