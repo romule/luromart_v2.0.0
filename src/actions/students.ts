@@ -3,7 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 
-export async function getOrCreateStudent(studentName: string) {
+export async function getOrCreateStudent(parentId: any, studentName?: any) {
   const supabase = await createClient();
 
   // 1. Get the current user
