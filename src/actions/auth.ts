@@ -1,56 +1,43 @@
-// src/actions/auth.ts
 "use server";
 
-import { supabase } from "@/lib/supabase";
-
-export async function registerParent(formData: any) {
-  const { name, email, phone, password } = formData;
-
-  console.log("Starting secure registration for:", email);
-
-  // Registretion of parents/users   */
-
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        name: name || "",
-        phone: phone || "",
-      },
-    },
-  });
-
-  if (error) {
-    console.error("Registration failed:", error.message);
-    throw new Error(error.message);
-  }
-
-  console.log(
-    "User vault account created. Database trigger handling profile cascade.",
-  );
-  return { success: true };
-}
-
-// Login of parents/users
+import { redirect } from "next/navigation";
+import { createClient } from "@/utils/supabase/server";
 
 export async function loginParent(formData: any) {
   const { email, password } = formData;
+  const supabase = await createClient();
 
-  console.log("Attempting login for:", email);
-
-  // 1. Ask Supabase to verify the credentials and create a secure session
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
-  // 2. Handle wrong passwords or unregistered emails
   if (error) {
-    console.error("Login failed:", error.message);
     throw new Error("Invalid email or password.");
   }
 
-  console.log("Login successful! Session created.");
   return { success: true };
+}
+
+export async function registerParent(formData: any) {
+  const { name, email, phone, password } = formData;
+  const supabase = await createClient();
+
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { name: name || "", phone: phone || "" },
+    },
+  });
+
+  if (error) throw new Error(error.message);
+
+  return { success: true };
+}
+
+export async function signOutAction() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/");
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -37,6 +38,8 @@ const formSchema = z.object({
 
 export default function AuthSheet() {
   const [isLogin, setIsLogin] = React.useState(true);
+  const [isOpen, setIsOpen] = React.useState(false);
+  const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -52,12 +55,16 @@ export default function AuthSheet() {
     try {
       if (!isLogin) {
         await registerParent(values);
-        alert("Success! Your parent portal is created.");
-        // Next: Redirect to cabinet
+        setIsOpen(false);
+        router.push("/dashboard");
+
+        console.log("Success! Your parent portal is created.");
       } else {
         await loginParent(values);
-        alert("Welcome back! You are securely logged in.");
-        // Next: Redirect to cabinet
+        setIsOpen(false);
+        router.push("/dashboard");
+
+        console.log("Welcome back! You are securely logged in.");
       }
     } catch (error: any) {
       alert(error.message || "Something went wrong.");
@@ -65,8 +72,7 @@ export default function AuthSheet() {
   }
 
   return (
-    <Dialog>
-      {/* We apply the Shadcn button styling directly to the Trigger itself */}
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger className={buttonVariants({ variant: "default" })}>
         Sign In / Register
       </DialogTrigger>
