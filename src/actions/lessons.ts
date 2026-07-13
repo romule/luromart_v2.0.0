@@ -80,3 +80,33 @@ export async function updateLessonTimeAction(formData: FormData) {
   // Added 'page' to force a hard layout refresh
   revalidatePath(`/dashboard/student/${studentId}`, "page");
 }
+
+export async function createLesson(param1: any, param2?: any, param3?: any) {
+  const supabase = await createClient();
+
+  // Handle both possible ways booking.ts might be sending the data
+  let insertData = {};
+  if (typeof param1 === "object") {
+    insertData = param1;
+  } else {
+    insertData = {
+      student_id: param1,
+      lesson_date: param2,
+      topic: param3 || "Initial Booking",
+      status: "scheduled",
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("lessons")
+    .insert(insertData)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Failed to create lesson from booking:", error);
+    throw new Error("Failed to create lesson");
+  }
+
+  return data;
+}
