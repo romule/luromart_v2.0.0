@@ -46,7 +46,7 @@ export default function TrashCard({ student }: { student: any }) {
           <button
             onClick={handleRestore}
             disabled={isProcessing}
-            className="p-2 text-emerald-600 hover:bg-emerald-50 border border-transparent hover:border-emerald-200 rounded-lg transition-all disabled:opacity-50"
+            className="p-2 text-emerald-600 hover:text-emerald-700 transition-all duration-200 active:scale-90 hover:bg-slate-100 rounded-lg disabled:opacity-50"
             title="Restore to Active Roster"
           >
             <RefreshCcw size={18} />
@@ -54,7 +54,7 @@ export default function TrashCard({ student }: { student: any }) {
           <button
             onClick={() => setIsAlertOpen(true)}
             disabled={isProcessing}
-            className="p-2 text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 rounded-lg transition-all disabled:opacity-50"
+            className="p-2 text-red-600 hover:text-red-700 transition-all duration-200 active:scale-90 hover:bg-slate-100 rounded-lg disabled:opacity-50"
             title="Permanently Delete"
           >
             <Trash2 size={18} />

@@ -33,7 +33,8 @@ export default function StudentCard({ student }: { student: any }) {
   return (
     <>
       <Link href={`/dashboard/student/${student.id}`}>
-        <div className="relative p-6 border border-slate-200 rounded-xl bg-white shadow-sm hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer group">
+        <div className="relative p-6 border border-slate-200 rounded-xl bg-white shadow-sm hover:shadow-lg hover:border-indigo-300 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group">
+          {" "}
           <button
             onClick={handleDeleteClick}
             className="absolute top-4 right-4 p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-full transition-colors opacity-0 group-hover:opacity-100"
@@ -41,7 +42,6 @@ export default function StudentCard({ student }: { student: any }) {
           >
             <Trash2 size={18} />
           </button>
-
           <h3 className="font-bold text-xl text-slate-900 group-hover:text-indigo-600 transition-colors pr-8">
             {student.name}
           </h3>

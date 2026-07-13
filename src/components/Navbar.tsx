@@ -23,7 +23,7 @@ const StudentMenu = ({ students }: { students: any[] }) => (
         <Link
           key={s.id}
           href={`/dashboard/student/${s.id}`}
-          className="block px-4 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
+          className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-indigo-600 transition-all duration-200 active:scale-95 px-3 py-2 rounded-md hover:bg-slate-50"
         >
           {s.name}
         </Link>
@@ -72,7 +72,7 @@ export default async function Navbar() {
               <>
                 <Link
                   href="/dashboard"
-                  className="hidden sm:flex items-center gap-2 hover:text-indigo-600 transition-colors px-3 py-2 rounded-md hover:bg-slate-50"
+                  className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-indigo-600 transition-all duration-200 active:scale-95 px-3 py-2 rounded-md hover:bg-slate-50"
                 >
                   <Library size={16} /> {label}
                 </Link>
@@ -85,7 +85,7 @@ export default async function Navbar() {
 
                 <Link
                   href="/dashboard/trash"
-                  className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors px-3 py-2 rounded-md hover:bg-slate-100"
+                  className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-indigo-600 transition-all duration-200 active:scale-95 px-3 py-2 rounded-md hover:bg-slate-50"
                 >
                   <Trash2 size={16} /> Trash{" "}
                   {deletedStudents.length > 0 && `(${deletedStudents.length})`}
@@ -94,7 +94,7 @@ export default async function Navbar() {
                 <form action="/auth/signout" method="post" className="ml-2">
                   <button
                     type="submit"
-                    className="text-slate-500 hover:text-red-600 transition-colors px-3 py-2 rounded-md hover:bg-red-50"
+                    className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-indigo-600 transition-all duration-200 active:scale-95 px-3 py-2 rounded-md hover:bg-slate-50"
                   >
                     Sign Out
                   </button>

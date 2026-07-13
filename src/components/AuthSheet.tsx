@@ -73,7 +73,9 @@ export default function AuthSheet() {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger className={buttonVariants({ variant: "default" })}>
+      <DialogTrigger
+        className={`${buttonVariants({ variant: "default" })} transition-all duration-200 active:scale-95 hover:shadow-md`}
+      >
         Sign In / Register
       </DialogTrigger>
 
@@ -157,15 +159,14 @@ export default function AuthSheet() {
           </form>
         </Form>
 
-        <div className="mt-4 pt-4 border-t text-center">
+        <div className="mt-4 pt-4 border-t text-center text-sm text-slate-600">
+          {isLogin ? "Don't have an account? " : "Already have an account? "}
           <button
             type="button"
             onClick={() => setIsLogin(!isLogin)}
-            className="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors"
+            className=" ml-1 font-semibold text-indigo-600 cursor-pointer transition-all duration-200 hover:text-indigo-800 hover:underline hover:underline-offset-2active:text-indigo-950 active:scale-95"
           >
-            {isLogin
-              ? "Don't have an account? Register here."
-              : "Already have an account? Sign in."}
+            {isLogin ? "Register here." : "Sign in."}
           </button>
         </div>
       </DialogContent>
