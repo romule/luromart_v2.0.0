@@ -2,8 +2,10 @@ import Hero from "@/components/Hero";
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-slate-50">
+    // We use a React Fragment here to avoid nesting unnecessary divs or <main> tags.
+    // The layout.tsx already handles the structural wrapper perfectly.
+    <>
       <Hero />
-    </main>
+    </>
   );
 }

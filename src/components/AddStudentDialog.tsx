@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { addStudentAction } from "@/actions/students";
+import { Plus } from "lucide-react";
 
 export default function AddStudentDialog({
   defaultOpen = false,
@@ -21,16 +22,14 @@ export default function AddStudentDialog({
 
   async function handleAction(formData: FormData) {
     await addStudentAction(formData);
-    setOpen(false); // Close the modal on success
+    setOpen(false);
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {/* FIX: Removed 'asChild' and the nested <Button>. 
-        We pass the standard button classes directly to the Trigger so it handles its own refs securely. 
-      */}
       <DialogTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-indigo-600 text-white hover:bg-indigo-700 h-10 px-4 py-2">
-        Add New Student
+        <Plus className="w-4 h-4 mr-2" />
+        Add Student
       </DialogTrigger>
 
       <DialogContent>
@@ -53,12 +52,17 @@ export default function AddStudentDialog({
             <label className="text-sm font-medium text-slate-700">
               Experience Level
             </label>
-            <Input
+            {/* Replaced Input with a native Select dropdown to protect data integrity */}
+            <select
               name="experience_level"
               defaultValue="Beginner"
               required
-              className="mt-1"
-            />
+              className="mt-1 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+            >
+              <option value="Beginner">Beginner</option>
+              <option value="Intermediate">Intermediate</option>
+              <option value="Advanced">Advanced</option>
+            </select>
           </div>
           <Button type="submit" className="w-full">
             Save Student

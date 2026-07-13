@@ -12,6 +12,8 @@ export default async function Navbar() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const firstName = user?.user_metadata?.full_name?.split(" ")[0] || "My";
+
   return (
     <nav className="w-full border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -28,7 +30,7 @@ export default async function Navbar() {
                 href="/dashboard"
                 className="text-sm font-medium text-slate-600 hover:text-indigo-600"
               >
-                Parent Cabinet
+                {firstName} Dashboard
               </Link>
               {/* Note: Ensure /auth/signout route exists to handle this POST request */}
               <form action={signOutAction}>
