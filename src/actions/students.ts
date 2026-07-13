@@ -64,3 +64,51 @@ export async function addStudentAction(formData: FormData) {
   revalidatePath("/dashboard");
   return { success: true };
 }
+
+export async function softDeleteStudentAction(studentId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { error } = await supabase
+    .from("students")
+    .update({ is_deleted: true })
+    .match({ id: studentId, parent_id: user.id });
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard");
+}
+
+export async function restoreStudentAction(studentId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { error } = await supabase
+    .from("students")
+    .update({ is_deleted: false })
+    .match({ id: studentId, parent_id: user.id });
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard");
+}
+
+export async function permanentlyDeleteStudentAction(studentId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { error } = await supabase
+    .from("students")
+    .delete()
+    .match({ id: studentId, parent_id: user.id });
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard");
+}
