@@ -7,7 +7,6 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { registerParent, loginParent } from "@/actions/auth";
 
-// We swapped the Sheet imports for Dialog imports
 import {
   Dialog,
   DialogContent,
@@ -57,13 +56,11 @@ export default function AuthSheet() {
         await registerParent(values);
         setIsOpen(false);
         router.push("/dashboard");
-
         console.log("Success! Your parent portal is created.");
       } else {
         await loginParent(values);
         setIsOpen(false);
         router.push("/dashboard");
-
         console.log("Welcome back! You are securely logged in.");
       }
     } catch (error: any) {
@@ -79,7 +76,6 @@ export default function AuthSheet() {
         Sign In / Register
       </DialogTrigger>
 
-      {/* DialogContent automatically handles the centered positioning, drop-in animation, and dimmed backdrop! */}
       <DialogContent className="sm:max-w-[425px] p-6">
         <DialogHeader className="mb-4 text-center">
           <DialogTitle className="text-2xl font-bold">
@@ -153,9 +149,15 @@ export default function AuthSheet() {
               )}
             />
 
-            <Button type="submit" className="w-full h-12 mt-2 text-base">
-              {isLogin ? "Sign In" : "Register"}
-            </Button>
+            {/* FIXED: Wrapped the Button in a flex container to center it */}
+            <div className="w-full flex justify-center mt-6">
+              <Button
+                type="submit"
+                className="w-full sm:w-auto h-12 px-8 text-base transition-all duration-200 active:scale-95"
+              >
+                {isLogin ? "Sign In" : "Register"}
+              </Button>
+            </div>
           </form>
         </Form>
 
@@ -164,7 +166,8 @@ export default function AuthSheet() {
           <button
             type="button"
             onClick={() => setIsLogin(!isLogin)}
-            className=" ml-1 font-semibold text-indigo-600 cursor-pointer transition-all duration-200 hover:text-indigo-800 hover:underline hover:underline-offset-2active:text-indigo-950 active:scale-95"
+            // FIXED: Added the missing space before active:text-indigo-950
+            className="sm:w-auto ml-1 font-semibold text-indigo-600 cursor-pointer transition-all duration-200 hover:text-indigo-800 hover:underline hover:underline-offset-2 active:text-indigo-950 active:scale-95"
           >
             {isLogin ? "Register here." : "Sign in."}
           </button>

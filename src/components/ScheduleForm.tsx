@@ -51,7 +51,9 @@ export default function LessonDialog({ lesson, mode, day, studentId }: any) {
             className="w-full p-2 border rounded"
             required
           />
-          <Button type="submit">Confirm Schedule</Button>
+          <Button type="submit" className="w-full sm:w-auto">
+            Confirm Schedule
+          </Button>
         </form>
       </DialogContent>
     </Dialog>

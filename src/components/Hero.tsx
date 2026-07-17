@@ -5,7 +5,7 @@ export default function Hero() {
 
       {/* TEXT CONTENT LAYER */}
       <div className="relative z-10 mx-auto max-w-4xl px-6">
-        <h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-7xl drop-shadow-md">
+        <h1 className="px-4 md:px-8text-5xl font-extrabold tracking-tight text-white sm:text-7xl drop-shadow-md text-2xl md:text-3xl lg:text-4xl">
           Discover the Joy of Painting
         </h1>
         <p className="mt-6 text-xl font-medium text-slate-200 drop-shadow-sm">

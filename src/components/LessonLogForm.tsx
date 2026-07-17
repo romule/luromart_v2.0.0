@@ -15,13 +15,15 @@ export default function LessonLogForm({ studentId }: { studentId: string }) {
       className="space-y-4 p-6 border border-slate-200 rounded-xl bg-white shadow-sm mt-6"
     >
       <input type="hidden" name="student_id" value={studentId} />
-      <h3 className="font-semibold text-lg text-slate-900">Log New Lesson</h3>
+      <h3 className="font-semibold text-lg text-slate-900 text-lg md:text-xl">
+        Log New Lesson
+      </h3>
 
       <Input name="topic" placeholder="Lesson Topic" required />
       <Textarea name="notes" placeholder="Teacher notes..." />
       <Input name="homework" placeholder="Homework URL" />
 
-      <Button type="submit" disabled={isPending} className="w-full">
+      <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
         {isPending ? "Logging..." : "Save Lesson"}
       </Button>
     </form>

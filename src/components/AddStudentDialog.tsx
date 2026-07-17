@@ -64,7 +64,7 @@ export default function AddStudentDialog({
               <option value="Advanced">Advanced</option>
             </select>
           </div>
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full sm:w-auto">
             Save Student
           </Button>
         </form>

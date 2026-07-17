@@ -23,7 +23,7 @@ export default async function TrashPage() {
       {/* Standardized Header - Back Button on Right */}
       <div className="flex justify-between items-end border-b border-slate-200 pb-6 mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 flex items-center gap-3">
+          <h1 className="text-3xl font-extrabold text-slate-900 flex items-center gap-3 text-2xl md:text-3xl lg:text-4xl">
             <Trash2 className="text-slate-400" size={28} />
             Trash Can
           </h1>

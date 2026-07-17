@@ -37,7 +37,9 @@ export default function TrashCard({ student }: { student: any }) {
     <>
       <div className="flex items-center justify-between p-4 border border-slate-200 rounded-xl bg-white shadow-sm">
         <div>
-          <h3 className="font-bold text-lg text-slate-900">{student.name}</h3>
+          <h3 className="font-bold text-lg text-slate-900 text-lg md:text-xl">
+            {student.name}
+          </h3>
           <p className="text-sm text-slate-500 mt-1">
             Level: {student.experience_level}
           </p>
@@ -46,7 +48,7 @@ export default function TrashCard({ student }: { student: any }) {
           <button
             onClick={handleRestore}
             disabled={isProcessing}
-            className="p-2 text-emerald-600 hover:text-emerald-700 transition-all duration-200 active:scale-90 hover:bg-slate-100 rounded-lg disabled:opacity-50"
+            className="p-2 sm:w-auto text-emerald-600 hover:text-emerald-700 transition-all duration-200 active:scale-90 hover:bg-slate-100 rounded-lg disabled:opacity-50"
             title="Restore to Active Roster"
           >
             <RefreshCcw size={18} />
@@ -54,7 +56,7 @@ export default function TrashCard({ student }: { student: any }) {
           <button
             onClick={() => setIsAlertOpen(true)}
             disabled={isProcessing}
-            className="p-2 text-red-600 hover:text-red-700 transition-all duration-200 active:scale-90 hover:bg-slate-100 rounded-lg disabled:opacity-50"
+            className="p-2 sm:w-auto text-red-600 hover:text-red-700 transition-all duration-200 active:scale-90 hover:bg-slate-100 rounded-lg disabled:opacity-50"
             title="Permanently Delete"
           >
             <Trash2 size={18} />
@@ -82,7 +84,7 @@ export default function TrashCard({ student }: { student: any }) {
             </Button>
             <Button
               variant="destructive"
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="sm:w-auto bg-red-600 hover:bg-red-700 text-white"
               onClick={handlePermanentDelete}
               disabled={isProcessing}
             >

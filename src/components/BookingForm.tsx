@@ -123,7 +123,7 @@ export default function BookingForm() {
 
       <Button
         size="lg"
-        className="w-full bg-slate-900 text-white hover:bg-slate-800 mt-4"
+        className="w-full sm:w-auto bg-slate-900 text-white hover:bg-slate-800 mt-4"
         onClick={handleSubmit}
         disabled={isSubmitting}
       >

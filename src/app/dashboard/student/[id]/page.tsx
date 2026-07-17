@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Calendar, FileText, Clock, ArrowLeft } from "lucide-react";
+import { Calendar, FileText, Clock, ArrowLeft, X } from "lucide-react";
 import LessonDialog from "@/components/LessonDialog";
 
 export default async function StudentProfilePage({
@@ -31,31 +31,42 @@ export default async function StudentProfilePage({
   return (
     <div className="flex-1 w-full max-w-7xl mx-auto px-6 py-12 flex flex-col">
       {/* HEADER: Student Info & Back Button */}
-      <div className="flex justify-between items-center pb-6 mb-8 border-b border-slate-200">
-        <div>
-          <h1 className="text-4xl font-extrabold text-slate-900">
+      <div className="flex justify-between items-center pb-6 mb-8 border-b border-slate-200 gap-4">
+        {/* Left Side: Name with Horizontal Scroll and Gradient Fade */}
+        <div className="relative flex-1 min-w-0">
+          <h1
+            className="text-3xl md:text-4xl font-extrabold text-slate-900 whitespace-nowrap overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
             {student.name}
           </h1>
-          <p className="text-slate-500 mt-2 font-medium">
+          <p className="text-slate-500 mt-1 font-medium">
             Level:{" "}
             <span className="text-emerald-600">{student.experience_level}</span>
           </p>
+
+          {/* The white gradient fade on the right side of the text */}
+          <div className="absolute top-0 right-0 h-10 w-12 bg-gradient-to-l from-white to-transparent pointer-events-none"></div>
         </div>
+
+        {/* Right Side: Simple touch-friendly close button */}
         <Link
           href="/dashboard"
-          className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:shadow-sm transition-all flex items-center gap-2 text-sm font-semibold text-slate-700"
+          className="shrink-0 flex items-center justify-center w-12 h-12 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full transition-colors active:scale-95"
         >
-          <ArrowLeft size={16} /> Back to Cabinet
+          <X size={24} />
         </Link>
       </div>
 
       {/* MAIN LAYOUT: 3 Columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* LEFT COLUMN: History (3/12) */}
-        <div className="lg:col-span-3 space-y-4">
+        <div className="order-3 lg:order-1 lg:col-span-3 flex flex-col gap-4">
           <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
             <FileText size={20} className="text-slate-400" />
-            <h2 className="font-bold text-lg text-slate-800">History</h2>
+            <h2 className="font-bold text-lg md:text-xl text-slate-800">
+              History
+            </h2>
           </div>
           {history.length > 0 ? (
             history.map((lesson: any) => (
@@ -68,31 +79,43 @@ export default async function StudentProfilePage({
           )}
         </div>
 
+        {/* Render 2nd on mobile, 1st on desktop */}
         {/* CENTER COLUMN: Calendar (6/12) */}
-        <div className="lg:col-span-6 bg-white p-8 border border-slate-200 rounded-3xl shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-bold text-2xl text-slate-900 flex items-center gap-3">
-              <Calendar size={24} className="text-indigo-600" /> July 2026
-            </h2>
-          </div>
-          <div className="grid grid-cols-7 gap-3">
-            {/* Simple calendar grid */}
-            {Array.from({ length: 31 }).map((_, i) => (
-              <LessonDialog
-                key={i}
-                mode="schedule"
-                day={i + 1}
-                studentId={student.id}
-              />
-            ))}
+        <div className="order-2 lg:order-2 lg:col-span-6 flex flex-col gap-4">
+          <div className="border border-slate-200 rounded-xl p-6 shadow-sm bg-white">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-bold text-lg md:text-xl text-slate-900 flex items-center gap-3">
+                <Calendar size={24} className="text-indigo-600" /> July 2026
+              </h2>
+            </div>
+
+            {/* DESKTOP ONLY: The big 31-day grid */}
+            <div className="hidden md:grid grid-cols-7 gap-3">
+              {Array.from({ length: 31 }).map((_, i) => (
+                <LessonDialog
+                  key={i}
+                  mode="schedule"
+                  day={i + 1}
+                  studentId={student.id}
+                />
+              ))}
+            </div>
+
+            {/* MOBILE ONLY: The big button that opens the native picker modal */}
+            <div className="block md:hidden">
+              <LessonDialog mode="mobile-schedule" studentId={student.id} />
+            </div>
           </div>
         </div>
 
         {/* RIGHT COLUMN: Upcoming (3/12) */}
-        <div className="lg:col-span-3 space-y-4">
+        {/* Render 1st on mobile, 2nd on desktop */}
+        <div className="order-1 lg:order-3 lg:col-span-3 flex flex-col gap-4">
           <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
             <Clock size={20} className="text-indigo-400" />
-            <h2 className="font-bold text-lg text-slate-800">Upcoming</h2>
+            <h2 className="font-bold text-lg md:text-xl text-slate-800">
+              Upcoming
+            </h2>
           </div>
           {upcoming.length > 0 ? (
             upcoming.map((lesson: any) => (

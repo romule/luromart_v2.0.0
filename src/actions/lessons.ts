@@ -28,19 +28,32 @@ export async function scheduleLessonAction(formData: FormData) {
   const datePart = formData.get("date") as string;
   const timePart = formData.get("time") as string;
 
-  // Combine them into a local Date object to fix the ADT offset
   const localDate = new Date(`${datePart}T${timePart}:00`);
+  const isoString = localDate.toISOString();
+
+  const { data: existingLesson } = await supabase
+    .from("lessons")
+    .select("id")
+    .eq("student_id", studentId)
+    .eq("lesson_date", isoString)
+    .maybeSingle();
+
+  if (existingLesson) {
+    // Return the error gently instead of crashing Next.js
+    return { error: "This time slot is already booked for this student." };
+  }
 
   const { error } = await supabase.from("lessons").insert({
     student_id: studentId,
-    lesson_date: localDate.toISOString(),
+    lesson_date: isoString,
     status: "scheduled",
     topic: "Pending",
   });
 
-  if (error) throw new Error("Failed to schedule");
+  if (error) return { error: "Failed to schedule lesson. Please try again." };
 
   revalidatePath(`/dashboard/student/${studentId}`, "page");
+  return { success: true }; // Let the frontend know we are good!
 }
 
 export async function cancelLessonAction(formData: FormData) {
