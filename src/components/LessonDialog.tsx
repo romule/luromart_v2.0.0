@@ -328,10 +328,9 @@ export default function LessonDialog({
                 try {
                   formData.append("lesson_id", lesson.id);
                   formData.append("student_id", studentId);
-                  formData.append(
-                    "date_part",
-                    format(selectedDate, "yyyy-MM-dd"),
-                  );
+
+                  const newDatePart = format(selectedDate, "yyyy-MM-dd");
+                  formData.append("date_part", newDatePart);
                   formData.append("time", selectedTime);
                   formData.append("duration", selectedDuration);
                   formData.append(
@@ -339,14 +338,28 @@ export default function LessonDialog({
                     createUtcTimestamp(selectedDate, selectedTime),
                   );
 
-                  await updateLessonTimeAction(formData);
-                  setOpen(false);
-                  setAlertState({
-                    isOpen: true,
-                    status: "updated",
-                    title: "Lesson Updated!",
-                    message: "The schedule has been successfully changed.",
-                  });
+                  // Capture the backend result
+                  const result = await updateLessonTimeAction(formData);
+
+                  if (result?.error) {
+                    // Show the error in the custom alert without closing the modal
+                    setAlertState({
+                      isOpen: true,
+                      status: "error",
+                      title: "Scheduling Conflict",
+                      message: result.error,
+                    });
+                  } else {
+                    // Success! Close modal, reset time, and show the green alert
+                    setOpen(false);
+                    setSelectedTime(""); // Clear the time for the next booking
+                    setAlertState({
+                      isOpen: true,
+                      status: "success",
+                      title: "Lesson Updated!",
+                      message: "The schedule has been successfully changed.",
+                    });
+                  }
                 } finally {
                   setIsSubmitting(false);
                 }
