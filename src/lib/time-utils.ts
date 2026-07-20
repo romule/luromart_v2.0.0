@@ -31,17 +31,18 @@ export function generateTimeSlots(
 
 /**
  * Checks if a selected date is in the past (to prevent retroactive booking).
- * Locks the current "today" to Atlantic Time to avoid midnight timezone edge cases.
+ * Locks the current "tomorrow" to Atlantic Time to avoid midnight timezone edge cases.
  */
-export function isDateInPast(selectedDate: Date): boolean {
-  // Get the current date in Atlantic Time, forced to midnight
-  const nowInStudioTz = new Date(
-    new Date().toLocaleString("en-US", { timeZone: STUDIO_TIMEZONE }),
-  );
-  const today = startOfDay(nowInStudioTz);
-  const targetDate = startOfDay(selectedDate);
+export function isDateInPast(date: Date) {
+  const today = new Date();
 
-  return isBefore(targetDate, today);
+  // Reset both to midnight to compare just the calendar days
+  today.setHours(0, 0, 0, 0);
+  const compareDate = new Date(date);
+  compareDate.setHours(0, 0, 0, 0);
+
+  // By checking <= today, we disable the past AND the current day
+  return compareDate <= today;
 }
 
 /**

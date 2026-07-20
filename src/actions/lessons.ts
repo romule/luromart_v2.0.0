@@ -102,9 +102,11 @@ export async function cancelLessonAction(formData: FormData) {
 
   const { error } = await supabase.from("lessons").delete().eq("id", lessonId);
 
-  if (error) throw new Error("Failed to cancel lesson");
+  // FIX: Graceful return instead of hard crash
+  if (error) return { error: "Failed to cancel lesson" };
 
   revalidatePath(`/dashboard/student/${studentId}`, "page");
+  return { success: true };
 }
 
 export async function updateLessonTimeAction(formData: FormData) {
@@ -123,11 +125,9 @@ export async function updateLessonTimeAction(formData: FormData) {
     isoString = localDate.toISOString();
   }
 
-  // 1. Calculate absolute start and end times
   const newStart = new Date(isoString).getTime();
   const newEnd = newStart + duration * 60000;
 
-  // 2. Overlap Check (Excluding the lesson we are currently updating!)
   const { data: existingLessons } = await supabase
     .from("lessons")
     .select("id, lesson_date, duration")
@@ -144,9 +144,8 @@ export async function updateLessonTimeAction(formData: FormData) {
     });
 
     if (hasOverlap) {
-      throw new Error(
-        "This new time overlaps with an existing lesson duration.",
-      );
+      // FIX: Graceful return instead of hard crash
+      return { error: "This new time overlaps with an existing lesson." };
     }
   }
 
@@ -158,9 +157,11 @@ export async function updateLessonTimeAction(formData: FormData) {
     })
     .eq("id", lessonId);
 
-  if (error) throw new Error("Failed to update time");
+  // FIX: Graceful return instead of hard crash
+  if (error) return { error: "Failed to update time" };
 
   revalidatePath(`/dashboard/student/${studentId}`, "page");
+  return { success: true }; // Let the frontend know we succeeded!
 }
 
 export async function createLesson(param1: any, param2?: any, param3?: any) {
