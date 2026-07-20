@@ -153,7 +153,7 @@ export default function LessonDialog({
   const durationOptions = ["30", "60", "90", "120"];
   const timeSlots = useMemo(() => generateTimeSlots("09:00", "20:00", 30), []);
 
-  // 1. VIEW MODE
+  // 1. VIEW MODE (HISTORY)
   if (mode === "view") {
     const d = new Date(lesson.lesson_date);
     const lessonDate = d.toLocaleDateString(undefined, {
@@ -169,17 +169,23 @@ export default function LessonDialog({
 
     return (
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger className="w-full p-4 text-left border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm bg-white">
-          <p className="font-bold text-sm text-slate-900">{lesson.topic}</p>
-          <div className="flex items-center gap-2 mt-1">
-            <p className="text-xs text-slate-500">{lessonDate}</p>
-            <span className="text-xs text-slate-300">•</span>
-            <p className="text-xs text-slate-500 font-medium">{lessonTime}</p>
+        <DialogTrigger className="w-full p-5 text-left border border-slate-200 rounded-xl hover:bg-slate-100 transition-all shadow-sm bg-slate-50 group cursor-pointer flex justify-between items-center">
+          <div>
+            <p className="font-extrabold text-md text-slate-700 group-hover:text-slate-900 transition-colors">
+              {lessonDate}
+            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <Clock size={14} className="text-slate-400" />
+              <p className="text-sm font-medium text-slate-500">{lessonTime}</p>
+            </div>
           </div>
+          <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-200 text-slate-500">
+            Done
+          </span>
         </DialogTrigger>
         <DialogContent className="sm:max-w-md">
           <DialogTitle className="text-xl border-b pb-4 text-slate-900">
-            {lesson.topic}
+            Lesson Details
           </DialogTitle>
           <div className="space-y-6 py-2">
             <div className="grid grid-cols-2 gap-4">
@@ -187,7 +193,7 @@ export default function LessonDialog({
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
                   Date & Time
                 </h4>
-                <p className="text-sm text-slate-700">
+                <p className="text-sm text-slate-700 font-medium">
                   {lessonDate}
                   <br />
                   {lessonTime}
@@ -197,21 +203,23 @@ export default function LessonDialog({
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
                   Duration
                 </h4>
-                <p className="text-sm text-slate-700">
+                <p className="text-sm text-slate-700 font-medium">
                   {lesson.duration
                     ? `${lesson.duration} minutes`
                     : "60 minutes"}
                 </p>
               </div>
             </div>
-            <div>
-              <h4 className="text-sm font-semibold text-slate-900 mb-1">
-                Teacher Notes
-              </h4>
-              <div className="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100 whitespace-pre-wrap">
-                {lesson.teacher_notes || "No notes provided for this lesson."}
+            {lesson.teacher_notes && (
+              <div>
+                <h4 className="text-sm font-semibold text-slate-900 mb-1">
+                  Teacher Notes
+                </h4>
+                <div className="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100 whitespace-pre-wrap">
+                  {lesson.teacher_notes}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -231,12 +239,23 @@ export default function LessonDialog({
       minute: "2-digit",
     });
 
+    // --- NEW ONGOING LOGIC ---
+    const nowMs = Date.now();
+    const startMs = d.getTime();
+    const endMs = startMs + (lesson.duration || 60) * 60000;
+    const isOngoing = nowMs >= startMs && nowMs < endMs;
+
     // PULL FROM DATABASE (Default to 0 if undefined for older lessons)
     const persistentColorId =
       lesson.color_id !== undefined && lesson.color_id !== null
         ? lesson.color_id
         : 0;
     const palette = colorPalettes[persistentColorId % colorPalettes.length];
+
+    const cardClasses = isOngoing
+      ? "w-full text-left p-4 rounded-xl transition-all cursor-pointer shadow-md group border-2 border-indigo-500 bg-indigo-50 ring-4 ring-indigo-500/20"
+      : `w-full text-left p-4 border rounded-xl transition-all cursor-pointer shadow-sm group ${palette.bg} ${palette.hover} ${palette.border}`;
+
     return (
       <>
         <Dialog
@@ -250,16 +269,16 @@ export default function LessonDialog({
             }
           }}
         >
-          <DialogTrigger
-            className={`w-full text-left p-4 border rounded-xl transition-all cursor-pointer shadow-sm group ${palette.bg} ${palette.hover} ${palette.border}`}
-          >
+          <DialogTrigger className={cardClasses}>
             <div className="flex justify-between items-start">
-              <p className={`font-bold text-sm ${palette.text}`}>
-                {lessonDateStr}
+              <p
+                className={`font-bold text-md ${isOngoing ? "text-indigo-700" : palette.text}`}
+              >
+                {isOngoing ? "ONGOING / PENDING" : lessonDateStr}
               </p>
               {lesson.duration && (
                 <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${palette.badge}`}
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isOngoing ? "bg-indigo-200 text-indigo-800" : palette.badge}`}
                 >
                   {lesson.duration}m
                 </span>
@@ -268,13 +287,14 @@ export default function LessonDialog({
             <div className="flex items-center gap-1 mt-0.5 mb-1">
               <Clock
                 size={12}
-                className={`${palette.accent} group-hover:scale-110 transition-transform`}
+                className={`${isOngoing ? "text-indigo-500 animate-pulse" : palette.accent} group-hover:scale-110 transition-transform`}
               />
-              <p className={`text-xs font-medium ${palette.text}`}>
+              <p
+                className={`text-xs font-medium ${isOngoing ? "text-indigo-700" : palette.text}`}
+              >
                 {lessonTimeStr}
               </p>
             </div>
-            <p className="text-xs text-slate-500 truncate">{lesson.topic}</p>
           </DialogTrigger>
 
           <DialogContent className="sm:max-w-md w-[95%] p-6 max-h-[90vh] overflow-y-auto rounded-xl">
@@ -282,7 +302,6 @@ export default function LessonDialog({
               Manage Lesson
             </DialogTitle>
 
-            {/* BUTTONS MOVED TO THE VERY TOP */}
             <div className="flex gap-3 pb-4 mb-2 border-b border-slate-100">
               <Button
                 type="submit"
@@ -338,11 +357,9 @@ export default function LessonDialog({
                     createUtcTimestamp(selectedDate, selectedTime),
                   );
 
-                  // Capture the backend result
                   const result = await updateLessonTimeAction(formData);
 
                   if (result?.error) {
-                    // Show the error in the custom alert without closing the modal
                     setAlertState({
                       isOpen: true,
                       status: "error",
@@ -350,9 +367,8 @@ export default function LessonDialog({
                       message: result.error,
                     });
                   } else {
-                    // Success! Close modal, reset time, and show the green alert
                     setOpen(false);
-                    setSelectedTime(""); // Clear the time for the next booking
+                    setSelectedTime("");
                     setAlertState({
                       isOpen: true,
                       status: "success",
