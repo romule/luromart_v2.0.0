@@ -1,18 +1,18 @@
 "use client";
 
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { CheckCircle2, AlertCircle, RefreshCw, Trash2 } from "lucide-react";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { CheckCircle2, AlertTriangle, Trash2 } from "lucide-react";
 
 export interface StatusAlertState {
   isOpen: boolean;
-  status: "success" | "updated" | "canceled" | "error";
+  status: "success" | "error" | "canceled";
   title: string;
   message: string;
 }
@@ -23,48 +23,52 @@ interface StatusAlertProps extends StatusAlertState {
 
 export default function StatusAlert({
   isOpen,
-  onClose,
   status,
   title,
   message,
+  onClose,
 }: StatusAlertProps) {
+  // Shrunk the icons down to w-8 h-8
   const config = {
-    success: { icon: CheckCircle2, color: "text-emerald-600" },
-    updated: { icon: RefreshCw, color: "text-amber-600" },
-    canceled: { icon: Trash2, color: "text-red-600" },
-    error: { icon: AlertCircle, color: "text-red-600" },
+    success: {
+      icon: <CheckCircle2 className="w-8 h-8 text-emerald-500 mb-3" />,
+      buttonClass: "bg-emerald-600 hover:bg-emerald-700 text-white",
+    },
+    error: {
+      icon: <AlertTriangle className="w-8 h-8 text-amber-500 mb-3" />,
+      buttonClass: "bg-amber-500 hover:bg-amber-600 text-white",
+    },
+    canceled: {
+      icon: <Trash2 className="w-8 h-8 text-red-500 mb-3" />,
+      buttonClass: "bg-red-600 hover:bg-red-700 text-white",
+    },
   };
 
-  const { icon: Icon, color } = config[status];
+  const currentConfig = config[status] || config.success;
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={onClose}>
-      {/* Forced flex-col and items-center to override the default grid */}
-      <AlertDialogContent className="w-[90%] max-w-sm rounded-xl p-6 flex flex-col items-center justify-center text-center border-none">
-        <AlertDialogHeader className="flex flex-col items-center justify-center w-full">
-          {/* Header/Title + Icon container - forced to center */}
-          <div className="flex items-center justify-center gap-2 mb-2 w-full">
-            <Icon size={24} className={color} />
-            <AlertDialogTitle className="text-xl font-bold text-slate-900 m-0">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-sm p-8 text-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 z-[70] shadow-xl rounded-2xl">
+        <div className="flex flex-col items-center justify-center">
+          {currentConfig.icon}
+
+          <DialogHeader className="w-full">
+            <DialogTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 text-center w-full">
               {title}
-            </AlertDialogTitle>
-          </div>
+            </DialogTitle>
+            <DialogDescription className="text-center text-sm text-slate-500 dark:text-slate-400 mt-2">
+              {message}
+            </DialogDescription>
+          </DialogHeader>
 
-          <AlertDialogDescription className="text-slate-600 text-center w-full">
-            {message}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-
-        {/* Action Button */}
-        <div className="w-full mt-6">
-          <AlertDialogAction
+          <Button
             onClick={onClose}
-            className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-xl h-12 text-base font-medium transition-all"
+            className={`w-full mt-6 h-11 text-base font-semibold shadow-sm rounded-xl ${currentConfig.buttonClass}`}
           >
             Okay
-          </AlertDialogAction>
+          </Button>
         </div>
-      </AlertDialogContent>
-    </AlertDialog>
+      </DialogContent>
+    </Dialog>
   );
 }
