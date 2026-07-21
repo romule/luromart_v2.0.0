@@ -2,7 +2,27 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+@import "tailwindcss";
+
+/* 1. Tell Tailwind v4 to use the .dark class instead of system preferences */
 @custom-variant dark (&:is(.dark *));
+
+@layer base {
+  /* 2. Tell the browser UI (like scrollbars) to turn dark */
+  html.dark {
+    color-scheme: dark;
+  }
+
+  /* 3. Smoothly transition the main background globally */
+  html,
+  body {
+    @apply transition-colors duration-300;
+  }
+
+  html.dark body {
+    @apply bg-slate-950 text-slate-50;
+  }
+}
 
 @theme inline {
   --color-background: var(--background);

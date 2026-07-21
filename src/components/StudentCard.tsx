@@ -16,13 +16,11 @@ import { Button } from "@/components/ui/button";
 export default function StudentCard({ student }: { student: any }) {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  // NEW: Track when the user clicks the card to navigate
   const [isNavigating, setIsNavigating] = useState(false);
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    e.stopPropagation(); // Prevents the link from triggering when clicking trash
+    e.stopPropagation();
     setIsAlertOpen(true);
   };
 
@@ -39,35 +37,38 @@ export default function StudentCard({ student }: { student: any }) {
         href={`/dashboard/student/${student.id}`}
         onClick={() => setIsNavigating(true)}
       >
-        <div className="relative p-6 border border-slate-200 rounded-xl bg-white shadow-sm hover:shadow-lg hover:border-indigo-300 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group overflow-hidden">
-          {/* NEW: Overlay that appears when navigating */}
+        <div className="relative p-6 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 shadow-sm hover:shadow-lg hover:border-indigo-300 dark:hover:border-indigo-500/50 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group overflow-hidden">
+          {/* Overlay that appears when navigating */}
           {isNavigating && (
-            <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-20 flex items-center justify-center">
-              <Loader2 size={24} className="animate-spin text-indigo-600" />
+            <div className="absolute inset-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-[1px] z-20 flex items-center justify-center">
+              <Loader2
+                size={24}
+                className="animate-spin text-indigo-600 dark:text-indigo-400"
+              />
             </div>
           )}
 
           <div className="flex justify-between items-start gap-4">
             <div className="relative flex-1 min-w-0">
               <h3
-                className="font-bold text-lg md:text-xl text-slate-900 group-hover:text-indigo-600 transition-colors whitespace-nowrap overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden"
+                className="font-bold text-lg md:text-xl text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors whitespace-nowrap overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden"
                 style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
               >
                 {student.name}
               </h3>
-              <div className="absolute top-0 right-0 h-full w-8 bg-gradient-to-l from-white to-transparent pointer-events-none"></div>
+              <div className="absolute top-0 right-0 h-full w-8 bg-gradient-to-l from-white dark:from-slate-900 to-transparent pointer-events-none"></div>
             </div>
 
             <button
               onClick={handleDeleteClick}
-              className="shrink-0 p-2 -mt-2 -mr-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-full transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 relative z-10"
+              className="shrink-0 p-2 -mt-2 -mr-2 text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-full transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 relative z-10"
               title="Move to Trash"
             >
               <Trash2 size={18} />
             </button>
           </div>
 
-          <p className="text-sm text-slate-500 mt-2 flex items-center gap-2">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-2">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
             Level: {student.experience_level}
           </p>
@@ -75,14 +76,15 @@ export default function StudentCard({ student }: { student: any }) {
       </Link>
 
       <Dialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-        <DialogContent className="sm:max-w-md p-6 z-[60]">
+        <DialogContent className="sm:max-w-md p-6 z-[60] dark:bg-slate-900 dark:border-slate-800">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-amber-600 text-xl font-bold">
+            <DialogTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-500 text-xl font-bold">
               <AlertCircle size={24} />
               Move to Trash?
             </DialogTitle>
-            <DialogDescription className="pt-2 text-base text-slate-500">
-              Are you sure you want to remove <strong>{student.name}</strong>{" "}
+            <DialogDescription className="pt-2 text-base text-slate-500 dark:text-slate-400">
+              Are you sure you want to remove{" "}
+              <strong className="dark:text-slate-200">{student.name}</strong>{" "}
               from your active roster? They will be moved to the Trash Can.
             </DialogDescription>
           </DialogHeader>
@@ -92,7 +94,7 @@ export default function StudentCard({ student }: { student: any }) {
               variant="outline"
               onClick={() => setIsAlertOpen(false)}
               disabled={isDeleting}
-              className="flex-1"
+              className="flex-1 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
             >
               Cancel
             </Button>

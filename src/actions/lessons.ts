@@ -193,3 +193,62 @@ export async function createLesson(param1: any, param2?: any, param3?: any) {
 
   return data;
 }
+
+// --- NEW GROUP CLASS ACTIONS ---
+
+export async function getAvailableGroupClassesAction() {
+  const supabase = await createClient();
+  const now = new Date().toISOString();
+
+  // Fetch classes happening in the future
+  const { data, error } = await supabase
+    .from("group_classes")
+    .select("*")
+    .gt("class_date", now)
+    .order("class_date", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching group classes:", error);
+    return { error: "Failed to load group classes." };
+  }
+
+  return { data };
+}
+
+export async function joinGroupClassAction(formData: FormData) {
+  const supabase = await createClient();
+  const studentId = formData.get("student_id") as string;
+  const groupId = formData.get("group_class_id") as string;
+  const classDate = formData.get("class_date") as string;
+  const duration = parseInt(formData.get("duration") as string) || 60;
+  const title = formData.get("title") as string;
+
+  // 1. PEAF Check: Did they already join this exact class?
+  const { data: existingEntry } = await supabase
+    .from("lessons")
+    .select("id")
+    .eq("student_id", studentId)
+    .eq("group_class_id", groupId)
+    .single();
+
+  if (existingEntry) {
+    return { error: "This student is already enrolled in this group class." };
+  }
+
+  // 2. Insert the relation into the lessons table
+  const { error } = await supabase.from("lessons").insert({
+    student_id: studentId,
+    group_class_id: groupId,
+    lesson_date: classDate,
+    duration: duration,
+    status: "scheduled",
+    topic: title, // We copy the title so it shows up cleanly in the UI
+  });
+
+  if (error) return { error: "Failed to join class. Please try again." };
+
+  revalidatePath(`/dashboard/student/${studentId}`, "page");
+  revalidatePath(`/dashboard`, "page"); // Refresh main cabinet too
+
+  return { success: true };
+}
