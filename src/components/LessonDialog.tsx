@@ -23,7 +23,6 @@ import {
   Clock,
   CalendarX2,
   CalendarPlus,
-  Globe,
   Timer,
   User,
   Users,
@@ -133,6 +132,7 @@ export default function LessonDialog({
   month,
   year,
   studentId,
+  studentName, // <-- Prop for Dashboard Name Injection
 }: any) {
   const [open, setOpen] = useState(false);
   const [lessonType, setLessonType] = useState<"individual" | "group" | null>(
@@ -283,8 +283,8 @@ export default function LessonDialog({
     const palette = colorPalettes[persistentColorId % colorPalettes.length];
 
     const cardClasses = isOngoing
-      ? "w-full text-left p-4 rounded-xl transition-all cursor-pointer shadow-md group border-2 border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-4 ring-indigo-500/20"
-      : `w-full text-left p-4 border rounded-xl transition-all cursor-pointer shadow-sm group ${palette.bg} ${palette.hover} ${palette.border}`;
+      ? "w-full text-left rounded-xl transition-all cursor-pointer shadow-md group border-2 border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-4 ring-indigo-500/20 overflow-hidden"
+      : `w-full text-left border rounded-xl transition-all cursor-pointer shadow-sm group overflow-hidden ${palette.bg} ${palette.hover} ${palette.border}`;
 
     return (
       <>
@@ -300,30 +300,50 @@ export default function LessonDialog({
           }}
         >
           <DialogTrigger className={cardClasses}>
-            <div className="flex justify-between items-start">
-              <p
-                className={`font-bold text-sm ${isOngoing ? "text-indigo-700 dark:text-indigo-300" : palette.text}`}
-              >
-                {isOngoing ? "ONGOING / PENDING" : lessonDateStr}
-              </p>
-              {lesson.duration && (
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isOngoing ? "bg-indigo-200 dark:bg-indigo-500/30 text-indigo-800 dark:text-indigo-200" : palette.badge}`}
+            {/* The 25% / 75% Split implementation */}
+            <div className={studentName ? "flex items-stretch w-full" : "p-4"}>
+              {studentName && (
+                <div
+                  className={`w-1/4 min-w-[80px] p-3 flex flex-col justify-center items-center border-r ${isOngoing ? "border-indigo-200 dark:border-indigo-500/30" : palette.border} bg-black/5 dark:bg-white/5`}
                 >
-                  {lesson.duration}m
-                </span>
+                  <p
+                    className={`font-extrabold text-xs sm:text-sm text-center truncate w-full ${isOngoing ? "text-indigo-800 dark:text-indigo-200" : palette.text}`}
+                    title={studentName}
+                  >
+                    {studentName}
+                  </p>
+                </div>
               )}
-            </div>
-            <div className="flex items-center gap-1 mt-0.5 mb-1">
-              <Clock
-                size={12}
-                className={`${isOngoing ? "text-indigo-500 dark:text-indigo-400 animate-pulse" : palette.accent} group-hover:scale-110 transition-transform`}
-              />
-              <p
-                className={`text-xs font-medium ${isOngoing ? "text-indigo-700 dark:text-indigo-300" : palette.text}`}
+
+              <div
+                className={`flex-1 flex flex-col justify-center w-3/4 ${studentName ? "p-3 sm:p-4" : ""}`}
               >
-                {lessonTimeStr}
-              </p>
+                <div className="flex justify-between items-start">
+                  <p
+                    className={`font-bold text-sm ${isOngoing ? "text-indigo-700 dark:text-indigo-300" : palette.text}`}
+                  >
+                    {isOngoing ? "ONGOING / PENDING" : lessonDateStr}
+                  </p>
+                  {lesson.duration && (
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ml-2 ${isOngoing ? "bg-indigo-200 dark:bg-indigo-500/30 text-indigo-800 dark:text-indigo-200" : palette.badge}`}
+                    >
+                      {lesson.duration}m
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 mt-0.5 mb-1">
+                  <Clock
+                    size={12}
+                    className={`${isOngoing ? "text-indigo-500 dark:text-indigo-400 animate-pulse" : palette.accent} group-hover:scale-110 transition-transform`}
+                  />
+                  <p
+                    className={`text-xs font-medium ${isOngoing ? "text-indigo-700 dark:text-indigo-300" : palette.text}`}
+                  >
+                    {lessonTimeStr}
+                  </p>
+                </div>
+              </div>
             </div>
           </DialogTrigger>
 
@@ -337,7 +357,7 @@ export default function LessonDialog({
                 type="submit"
                 form={`update-form-${lesson.id}`}
                 disabled={isSubmitting || !selectedDate || !selectedTime}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white h-11 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white h-11 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed shadow-md cursor-pointer"
               >
                 {isSubmitting ? "Wait..." : "Update Details"}
               </Button>
@@ -361,7 +381,7 @@ export default function LessonDialog({
                   type="submit"
                   variant="destructive"
                   disabled={isSubmitting}
-                  className="w-full bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-500 hover:bg-red-100 dark:hover:bg-red-500/20 border-none shadow-none flex items-center justify-center gap-2 h-11 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-500 hover:bg-red-100 dark:hover:bg-red-500/20 border-none shadow-none flex items-center justify-center gap-2 h-11 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   <CalendarX2 size={16} />
                   {isSubmitting ? "Wait..." : "Cancel Lesson"}
@@ -423,7 +443,7 @@ export default function LessonDialog({
                     selected={selectedDate}
                     onSelect={setSelectedDate}
                     disabled={isDateInPast}
-                    className="bg-transparent dark:text-slate-100"
+                    className="bg-transparent dark:text-slate-100 cursor-pointer"
                   />
                 </div>
               </div>
@@ -440,7 +460,7 @@ export default function LessonDialog({
                         <button
                           key={dur}
                           type="button"
-                          className={`w-full h-10 text-xs sm:text-sm transition-all rounded-xl border flex items-center justify-center ${selectedDuration === dur ? "bg-indigo-600 text-white font-semibold border-indigo-600 shadow-md shadow-indigo-200/50 dark:shadow-indigo-900/50" : "bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"}`}
+                          className={`w-full h-10 text-xs sm:text-sm transition-all rounded-xl border flex items-center justify-center cursor-pointer ${selectedDuration === dur ? "bg-indigo-600 text-white font-semibold border-indigo-600 shadow-md shadow-indigo-200/50 dark:shadow-indigo-900/50" : "bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"}`}
                           onClick={() => setSelectedDuration(dur)}
                         >
                           {dur}m
@@ -464,7 +484,7 @@ export default function LessonDialog({
                           <button
                             key={slot}
                             type="button"
-                            className={`w-full h-11 text-sm transition-all rounded-xl border flex items-center justify-center ${selectedTime === slot ? "bg-indigo-600 text-white font-semibold border-indigo-600 shadow-md shadow-indigo-200/50 dark:shadow-indigo-900/50" : "bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"}`}
+                            className={`w-full h-11 text-sm transition-all rounded-xl border flex items-center justify-center cursor-pointer ${selectedTime === slot ? "bg-indigo-600 text-white font-semibold border-indigo-600 shadow-md shadow-indigo-200/50 dark:shadow-indigo-900/50" : "bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"}`}
                             onClick={() => setSelectedTime(slot)}
                           >
                             {displayTime}
@@ -499,7 +519,7 @@ export default function LessonDialog({
             }
           }}
         >
-          <DialogTrigger className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 active:scale-95 transition-all shadow-md">
+          <DialogTrigger className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 active:scale-95 transition-all shadow-md cursor-pointer">
             <CalendarPlus size={20} /> Schedule Lesson
           </DialogTrigger>
           <DialogContent className="sm:max-w-md w-[95%] max-h-[90vh] overflow-y-auto rounded-xl dark:bg-slate-950 dark:border-slate-800">
@@ -515,7 +535,7 @@ export default function LessonDialog({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
                 <button
                   onClick={() => setLessonType("individual")}
-                  className="flex flex-col items-center justify-center gap-3 p-6 border-2 border-slate-100 dark:border-slate-800 rounded-2xl hover:border-emerald-500 dark:hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-all group"
+                  className="flex flex-col items-center justify-center gap-3 p-6 border-2 border-slate-100 dark:border-slate-800 rounded-2xl hover:border-emerald-500 dark:hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-all group cursor-pointer"
                 >
                   <div className="w-12 h-12 bg-slate-100 dark:bg-slate-900 rounded-full flex items-center justify-center group-hover:bg-emerald-100 dark:group-hover:bg-emerald-500/20 transition-colors">
                     <User
@@ -535,7 +555,7 @@ export default function LessonDialog({
 
                 <button
                   onClick={handleSelectGroupPath}
-                  className="flex flex-col items-center justify-center gap-3 p-6 border-2 border-slate-100 dark:border-slate-800 rounded-2xl hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-all group"
+                  className="flex flex-col items-center justify-center gap-3 p-6 border-2 border-slate-100 dark:border-slate-800 rounded-2xl hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-all group cursor-pointer"
                 >
                   <div className="w-12 h-12 bg-slate-100 dark:bg-slate-900 rounded-full flex items-center justify-center group-hover:bg-indigo-100 dark:group-hover:bg-indigo-500/20 transition-colors">
                     <Users
@@ -602,7 +622,7 @@ export default function LessonDialog({
                       selected={selectedDate}
                       onSelect={setSelectedDate}
                       disabled={isDateInPast}
-                      className="bg-transparent dark:text-slate-100"
+                      className="bg-transparent dark:text-slate-100 cursor-pointer"
                     />
                   </div>
                 </div>
@@ -619,7 +639,7 @@ export default function LessonDialog({
                           <button
                             key={dur}
                             type="button"
-                            className={`w-full h-10 text-xs sm:text-sm transition-all rounded-xl border flex items-center justify-center ${selectedDuration === dur ? "bg-emerald-600 text-white font-semibold border-emerald-600 shadow-md shadow-emerald-200/50 dark:shadow-emerald-900/50" : "bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"}`}
+                            className={`w-full h-10 text-xs sm:text-sm transition-all rounded-xl border flex items-center justify-center cursor-pointer ${selectedDuration === dur ? "bg-emerald-600 text-white font-semibold border-emerald-600 shadow-md shadow-emerald-200/50 dark:shadow-emerald-900/50" : "bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"}`}
                             onClick={() => setSelectedDuration(dur)}
                           >
                             {dur}m
@@ -644,7 +664,7 @@ export default function LessonDialog({
                               <button
                                 key={slot}
                                 type="button"
-                                className={`w-full h-11 text-sm transition-all rounded-xl border flex items-center justify-center ${selectedTime === slot ? "bg-emerald-600 text-white font-semibold border-emerald-600 shadow-md shadow-emerald-200/50 dark:shadow-emerald-900/50" : "bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"}`}
+                                className={`w-full h-11 text-sm transition-all rounded-xl border flex items-center justify-center cursor-pointer ${selectedTime === slot ? "bg-emerald-600 text-white font-semibold border-emerald-600 shadow-md shadow-emerald-200/50 dark:shadow-emerald-900/50" : "bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"}`}
                                 onClick={() => setSelectedTime(slot)}
                               >
                                 {displayTime}
@@ -662,14 +682,14 @@ export default function LessonDialog({
                     type="button"
                     variant="outline"
                     onClick={() => setLessonType(null)}
-                    className="h-12 px-4 rounded-xl text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    className="h-12 px-4 rounded-xl text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
                   >
                     Back
                   </Button>
                   <Button
                     type="submit"
                     disabled={isSubmitting || !selectedDate || !selectedTime}
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white h-12 text-lg rounded-xl disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white h-12 text-lg rounded-xl disabled:opacity-50 disabled:cursor-not-allowed shadow-md cursor-pointer"
                   >
                     {isSubmitting ? "Booking..." : "Confirm Schedule"}
                   </Button>
@@ -765,7 +785,7 @@ export default function LessonDialog({
                             <Button
                               type="submit"
                               disabled={isSubmitting}
-                              className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-6 shadow-md"
+                              className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-6 shadow-md cursor-pointer"
                             >
                               {isSubmitting ? "Joining..." : "Join Class"}
                             </Button>
@@ -791,7 +811,7 @@ export default function LessonDialog({
                     type="button"
                     variant="outline"
                     onClick={() => setLessonType(null)}
-                    className="h-11 px-6 rounded-xl text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    className="h-11 px-6 rounded-xl text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
                   >
                     Back
                   </Button>

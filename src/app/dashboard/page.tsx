@@ -3,7 +3,7 @@ import AddStudentDialog from "@/components/AddStudentDialog";
 import StudentCard from "@/components/StudentCard";
 import LessonDialog from "@/components/LessonDialog";
 import { redirect } from "next/navigation";
-import { Users, Clock, UsersRound } from "lucide-react";
+import { Contact, User, Users } from "lucide-react";
 
 export default async function DashboardPage({
   searchParams,
@@ -77,7 +77,10 @@ export default async function DashboardPage({
           {/* LEFT COLUMN: Students List & Add Button */}
           <div className="lg:col-span-4 flex flex-col gap-4">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
-              <Users size={20} className="text-slate-400 dark:text-slate-500" />
+              <Contact
+                size={20}
+                className="text-slate-400 dark:text-slate-500"
+              />
               <h2 className="font-bold text-lg text-slate-800 dark:text-slate-200">
                 My Students
               </h2>
@@ -101,7 +104,7 @@ export default async function DashboardPage({
           <div className="lg:col-span-4 flex flex-col gap-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <Clock
+                <User
                   size={20}
                   className="text-emerald-500 dark:text-emerald-400"
                 />
@@ -120,16 +123,13 @@ export default async function DashboardPage({
             >
               {upcomingIndividual.length > 0 ? (
                 upcomingIndividual.map((lesson: any) => (
-                  <div key={lesson.id} className="flex flex-col gap-1">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 ml-1">
-                      • {lesson.student_name}
-                    </span>
-                    <LessonDialog
-                      lesson={lesson}
-                      mode="upcoming"
-                      studentId={lesson.student_id}
-                    />
-                  </div>
+                  <LessonDialog
+                    key={lesson.id}
+                    lesson={lesson}
+                    mode="upcoming"
+                    studentId={lesson.student_id}
+                    studentName={lesson.student_name}
+                  />
                 ))
               ) : (
                 <p className="text-sm text-slate-400 dark:text-slate-500 italic p-6 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-center">
@@ -143,7 +143,7 @@ export default async function DashboardPage({
           <div className="lg:col-span-4 flex flex-col gap-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <UsersRound
+                <Users
                   size={20}
                   className="text-indigo-500 dark:text-indigo-400"
                 />
@@ -162,16 +162,13 @@ export default async function DashboardPage({
             >
               {upcomingGroup.length > 0 ? (
                 upcomingGroup.map((lesson: any) => (
-                  <div key={lesson.id} className="flex flex-col gap-1">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 ml-1">
-                      • {lesson.student_name}
-                    </span>
-                    <LessonDialog
-                      lesson={lesson}
-                      mode="upcoming"
-                      studentId={lesson.student_id}
-                    />
-                  </div>
+                  <LessonDialog
+                    key={lesson.id}
+                    lesson={lesson}
+                    mode="upcoming"
+                    studentId={lesson.student_id}
+                    studentName={lesson.student_name}
+                  />
                 ))
               ) : (
                 <p className="text-sm text-slate-400 dark:text-slate-500 italic p-6 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-center">

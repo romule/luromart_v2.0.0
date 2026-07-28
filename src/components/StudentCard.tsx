@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Trash2, AlertCircle, Loader2 } from "lucide-react";
+import { Trash2, AlertCircle, Loader2, Settings } from "lucide-react";
 import { softDeleteStudentAction } from "@/actions/students";
 import {
   Dialog,
@@ -18,12 +18,6 @@ export default function StudentCard({ student }: { student: any }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
 
-  const handleDeleteClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsAlertOpen(true);
-  };
-
   const confirmDelete = async () => {
     setIsDeleting(true);
     await softDeleteStudentAction(student.id);
@@ -31,49 +25,78 @@ export default function StudentCard({ student }: { student: any }) {
     setIsDeleting(false);
   };
 
+  // Dynamic Color Logic for Experience Levels
+  const getLevelStyles = (level: string) => {
+    const l = (level || "").toLowerCase();
+    if (l.includes("beginner"))
+      return {
+        dot: "bg-emerald-500",
+        text: "text-emerald-600 dark:text-emerald-400",
+      };
+    if (l.includes("intermedia"))
+      return {
+        dot: "bg-amber-500",
+        text: "text-amber-600 dark:text-amber-400",
+      };
+    if (l.includes("advanced"))
+      return { dot: "bg-red-500", text: "text-red-600 dark:text-red-400" };
+    return { dot: "bg-slate-500", text: "text-slate-600 dark:text-slate-400" };
+  };
+
+  const levelStyles = getLevelStyles(student.experience_level);
+
   return (
     <>
-      <Link
-        href={`/dashboard/student/${student.id}`}
-        onClick={() => setIsNavigating(true)}
-      >
-        <div className="relative p-6 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 shadow-sm hover:shadow-lg hover:border-indigo-300 dark:hover:border-indigo-500/50 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group overflow-hidden">
-          {/* Overlay that appears when navigating */}
-          {isNavigating && (
-            <div className="absolute inset-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-[1px] z-20 flex items-center justify-center">
-              <Loader2
-                size={24}
-                className="animate-spin text-indigo-600 dark:text-indigo-400"
-              />
-            </div>
-          )}
+      <div className="relative p-6 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 shadow-sm transition-all duration-300 group overflow-hidden">
+        {isNavigating && (
+          <div className="absolute inset-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-[1px] z-20 flex items-center justify-center">
+            <Loader2
+              size={24}
+              className="animate-spin text-indigo-600 dark:text-indigo-400"
+            />
+          </div>
+        )}
 
-          <div className="flex justify-between items-start gap-4">
-            <div className="relative flex-1 min-w-0">
-              <h3
-                className="font-bold text-lg md:text-xl text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors whitespace-nowrap overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden"
-                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-              >
-                {student.name}
-              </h3>
-              <div className="absolute top-0 right-0 h-full w-8 bg-gradient-to-l from-white dark:from-slate-900 to-transparent pointer-events-none"></div>
-            </div>
+        <div className="flex justify-between items-start gap-4">
+          <div className="relative flex-1 min-w-0">
+            <h3
+              className="font-bold text-lg md:text-xl text-slate-900 dark:text-slate-100 whitespace-nowrap overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+              {student.name}
+            </h3>
+            <div className="absolute top-0 right-0 h-full w-8 bg-gradient-to-l from-white dark:from-slate-900 to-transparent pointer-events-none"></div>
+          </div>
 
+          <div className="shrink-0 flex items-center gap-1 -mt-2 -mr-2 bg-slate-50 dark:bg-slate-950 p-1 rounded-lg border border-slate-100 dark:border-slate-800 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10">
+            <Link
+              href={`/dashboard/student/${student.id}`}
+              onClick={() => setIsNavigating(true)}
+              className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:rotate-90 transition-all rounded-md cursor-pointer"
+              title="Manage Student"
+            >
+              <Settings size={18} />
+            </Link>
+            <div className="w-px h-4 bg-slate-200 dark:bg-slate-800"></div>
             <button
-              onClick={handleDeleteClick}
-              className="shrink-0 p-2 -mt-2 -mr-2 text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-full transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 relative z-10"
+              onClick={() => setIsAlertOpen(true)}
+              className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-500 rounded-md transition-colors cursor-pointer"
               title="Move to Trash"
             >
               <Trash2 size={18} />
             </button>
           </div>
-
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-2">
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-            Level: {student.experience_level}
-          </p>
         </div>
-      </Link>
+
+        <p
+          className={`text-sm mt-2 flex items-center gap-2 font-medium ${levelStyles.text}`}
+        >
+          <span
+            className={`inline-block w-2 h-2 rounded-full ${levelStyles.dot}`}
+          ></span>
+          Level: {student.experience_level}
+        </p>
+      </div>
 
       <Dialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <DialogContent className="sm:max-w-md p-6 z-[60] dark:bg-slate-900 dark:border-slate-800">
@@ -94,12 +117,12 @@ export default function StudentCard({ student }: { student: any }) {
               variant="outline"
               onClick={() => setIsAlertOpen(false)}
               disabled={isDeleting}
-              className="flex-1 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+              className="flex-1 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
             >
               Cancel
             </Button>
             <Button
-              className="flex-1 bg-amber-500 hover:bg-amber-600 text-white transition-colors"
+              className="flex-1 bg-amber-500 hover:bg-amber-600 text-white transition-colors cursor-pointer"
               onClick={confirmDelete}
               disabled={isDeleting}
             >
