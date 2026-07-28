@@ -35,6 +35,7 @@ export default async function StudentProfilePage({
   const nowMs = Date.now();
 
   const history = lessons.filter((l: any) => {
+    if (l.status === "declined") return false; // FIX: Hide from history
     if (l.status === "completed") return true;
     const lessonEndMs =
       new Date(l.lesson_date).getTime() + (l.duration || 60) * 60000;
@@ -42,7 +43,8 @@ export default async function StudentProfilePage({
   });
 
   const upcomingAll = lessons.filter((l: any) => {
-    if (l.status === "completed") return false;
+    // FIX: Hide completed AND declined lessons
+    if (l.status === "completed" || l.status === "declined") return false;
     const lessonEndMs =
       new Date(l.lesson_date).getTime() + (l.duration || 60) * 60000;
     return lessonEndMs >= nowMs;

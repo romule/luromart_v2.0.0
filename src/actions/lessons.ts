@@ -37,35 +37,45 @@ export async function scheduleLessonAction(formData: FormData) {
     isoString = localDate.toISOString();
   }
 
-  // 1. Calculate absolute start and end times in milliseconds
   const newStart = new Date(isoString).getTime();
-  const newEnd = newStart + duration * 60000; // 60,000 ms in a minute
+  const newEnd = newStart + duration * 60000;
 
-  // 2. Fetch all existing lessons for this student
+  // OVERLAP ENGINE: Check globally for ANY approved OR pending lessons
   const { data: existingLessons } = await supabase
     .from("lessons")
     .select("id, lesson_date, duration")
-    .eq("student_id", studentId);
+    .in("status", ["scheduled", "pending"]);
 
-  // 3. The Overlap Engine: Check if the new time block collides with ANY existing block
-  if (existingLessons && existingLessons.length > 0) {
-    const hasOverlap = existingLessons.some((lesson) => {
-      const existingStart = new Date(lesson.lesson_date).getTime();
-      const existingDuration = lesson.duration || 60;
-      const existingEnd = existingStart + existingDuration * 60000;
+  // OVERLAP ENGINE: Check globally against all created Group Classes
+  const { data: groupClasses } = await supabase
+    .from("group_classes")
+    .select("id, class_date, duration");
 
-      // Collision math: Starts before the other ends AND ends after the other starts
-      return newStart < existingEnd && newEnd > existingStart;
-    });
+  // Merge both pools into a single array of busy blocks
+  const busyBlocks = [
+    ...(existingLessons || []).map((l) => ({
+      start: new Date(l.lesson_date).getTime(),
+      duration: l.duration || 60,
+    })),
+    ...(groupClasses || []).map((g) => ({
+      start: new Date(g.class_date).getTime(),
+      duration: g.duration || 60,
+    })),
+  ];
 
-    if (hasOverlap) {
-      return {
-        error: "This time slot overlaps with an existing lesson duration.",
-      };
-    }
+  const hasOverlap = busyBlocks.some((block) => {
+    const blockStart = block.start;
+    const blockEnd = blockStart + block.duration * 60000;
+    return newStart < blockEnd && newEnd > blockStart;
+  });
+
+  if (hasOverlap) {
+    return {
+      error:
+        "This time slot overlaps with an existing class or pending request.",
+    };
   }
 
-  // 4. Bulletproof Color ID Engine
   const { data: lastLesson } = await supabase
     .from("lessons")
     .select("color_id")
@@ -75,7 +85,6 @@ export async function scheduleLessonAction(formData: FormData) {
     .maybeSingle();
 
   let nextColorId = 0;
-  // Force Number() conversion to prevent JavaScript "0" + 1 = "01" bugs
   if (lastLesson && lastLesson.color_id !== null) {
     nextColorId = (Number(lastLesson.color_id) + 1) % 10;
   }
@@ -85,8 +94,8 @@ export async function scheduleLessonAction(formData: FormData) {
     lesson_date: isoString,
     duration: duration,
     color_id: nextColorId,
-    status: "scheduled",
-    topic: "Pending",
+    status: "pending",
+    topic: "Art Lesson",
   });
 
   if (error) return { error: "Failed to schedule lesson. Please try again." };
@@ -102,7 +111,6 @@ export async function cancelLessonAction(formData: FormData) {
 
   const { error } = await supabase.from("lessons").delete().eq("id", lessonId);
 
-  // FIX: Graceful return instead of hard crash
   if (error) return { error: "Failed to cancel lesson" };
 
   revalidatePath(`/dashboard/student/${studentId}`, "page");
@@ -128,25 +136,39 @@ export async function updateLessonTimeAction(formData: FormData) {
   const newStart = new Date(isoString).getTime();
   const newEnd = newStart + duration * 60000;
 
+  // OVERLAP ENGINE: Check globally for ANY approved OR pending lessons (excluding this one)
   const { data: existingLessons } = await supabase
     .from("lessons")
     .select("id, lesson_date, duration")
-    .eq("student_id", studentId)
+    .in("status", ["scheduled", "pending"])
     .neq("id", lessonId);
 
-  if (existingLessons && existingLessons.length > 0) {
-    const hasOverlap = existingLessons.some((lesson) => {
-      const existingStart = new Date(lesson.lesson_date).getTime();
-      const existingDuration = lesson.duration || 60;
-      const existingEnd = existingStart + existingDuration * 60000;
+  const { data: groupClasses } = await supabase
+    .from("group_classes")
+    .select("id, class_date, duration");
 
-      return newStart < existingEnd && newEnd > existingStart;
-    });
+  const busyBlocks = [
+    ...(existingLessons || []).map((l) => ({
+      start: new Date(l.lesson_date).getTime(),
+      duration: l.duration || 60,
+    })),
+    ...(groupClasses || []).map((g) => ({
+      start: new Date(g.class_date).getTime(),
+      duration: g.duration || 60,
+    })),
+  ];
 
-    if (hasOverlap) {
-      // FIX: Graceful return instead of hard crash
-      return { error: "This new time overlaps with an existing lesson." };
-    }
+  const hasOverlap = busyBlocks.some((block) => {
+    const blockStart = block.start;
+    const blockEnd = blockStart + block.duration * 60000;
+    return newStart < blockEnd && newEnd > blockStart;
+  });
+
+  if (hasOverlap) {
+    return {
+      error:
+        "This new time overlaps with an existing class or pending request.",
+    };
   }
 
   const { error } = await supabase
@@ -154,14 +176,14 @@ export async function updateLessonTimeAction(formData: FormData) {
     .update({
       lesson_date: isoString,
       duration: duration,
+      status: "pending", // Rescheduling throws it back to pending
     })
     .eq("id", lessonId);
 
-  // FIX: Graceful return instead of hard crash
   if (error) return { error: "Failed to update time" };
 
   revalidatePath(`/dashboard/student/${studentId}`, "page");
-  return { success: true }; // Let the frontend know we succeeded!
+  return { success: true };
 }
 
 export async function createLesson(param1: any, param2?: any, param3?: any) {
@@ -200,7 +222,6 @@ export async function getAvailableGroupClassesAction() {
   const supabase = await createClient();
   const now = new Date().toISOString();
 
-  // Fetch classes happening in the future
   const { data, error } = await supabase
     .from("group_classes")
     .select("*")
@@ -235,20 +256,45 @@ export async function joinGroupClassAction(formData: FormData) {
     return { error: "This student is already enrolled in this group class." };
   }
 
-  // 2. Insert the relation into the lessons table
+  // 2. OVERLAP Check: Does the student already have an individual lesson at this exact time?
+  const newStart = new Date(classDate).getTime();
+  const newEnd = newStart + duration * 60000;
+
+  const { data: studentLessons } = await supabase
+    .from("lessons")
+    .select("id, lesson_date, duration")
+    .eq("student_id", studentId)
+    .in("status", ["scheduled", "pending"]);
+
+  if (studentLessons && studentLessons.length > 0) {
+    const hasOverlap = studentLessons.some((lesson) => {
+      const existingStart = new Date(lesson.lesson_date).getTime();
+      const existingDuration = lesson.duration || 60;
+      const existingEnd = existingStart + existingDuration * 60000;
+      return newStart < existingEnd && newEnd > existingStart;
+    });
+
+    if (hasOverlap) {
+      return {
+        error:
+          "This student already has an overlapping individual class at this time.",
+      };
+    }
+  }
+
   const { error } = await supabase.from("lessons").insert({
     student_id: studentId,
     group_class_id: groupId,
     lesson_date: classDate,
     duration: duration,
     status: "scheduled",
-    topic: title, // We copy the title so it shows up cleanly in the UI
+    topic: title,
   });
 
   if (error) return { error: "Failed to join class. Please try again." };
 
   revalidatePath(`/dashboard/student/${studentId}`, "page");
-  revalidatePath(`/dashboard`, "page"); // Refresh main cabinet too
+  revalidatePath(`/dashboard`, "page");
 
   return { success: true };
 }

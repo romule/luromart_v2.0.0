@@ -17,6 +17,12 @@ export default async function DashboardPage({
 
   if (!user) redirect("/");
 
+  // SECURITY ROUTING: Instantly redirect the Admin to their panel
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (adminEmail && user.email === adminEmail) {
+    redirect("/admin");
+  }
+
   const params = await searchParams;
   const isOnboarding = params.onboarding === "true";
 
@@ -44,7 +50,8 @@ export default async function DashboardPage({
 
   const upcomingAll = allLessons
     .filter((l: any) => {
-      if (l.status === "completed") return false;
+      // Hide completed AND declined lessons from the upcoming lists
+      if (l.status === "completed" || l.status === "declined") return false;
       const lessonEndMs =
         new Date(l.lesson_date).getTime() + (l.duration || 60) * 60000;
       return lessonEndMs >= nowMs;
