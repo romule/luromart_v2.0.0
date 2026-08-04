@@ -9,11 +9,16 @@ export default async function Navbar() {
 
   let activeStudents: any[] = [];
   let deletedStudents: any[] = [];
-  let declinedLessons: any[] = [];
-  const firstName = user?.user_metadata?.full_name?.split(" ")[0];
+  let notifications: any[] = [];
+  let isAdmin = false;
+
+  const firstName =
+    user?.user_metadata?.full_name?.split(" ")[0] ||
+    user?.user_metadata?.name?.split(" ")[0];
   const label = firstName ? `${firstName} Cabinet` : "Cabinet";
 
   if (user) {
+    isAdmin = user.email === process.env.ADMIN_EMAIL;
     const { data } = await supabase
       .from("students")
       .select("*")
@@ -22,19 +27,35 @@ export default async function Navbar() {
     if (data && data.length > 0) {
       activeStudents = data.filter((s) => !s.is_deleted);
       deletedStudents = data.filter((s) => s.is_deleted);
-
-      // Fetch declined lessons to feed the notification bell
       const studentIds = data.map((s) => s.id);
-      const { data: declinedData } = await supabase
-        .from("lessons")
-        .select("id, lesson_date, duration, student_id, students(name)")
-        .in("student_id", studentIds)
-        .eq("status", "declined")
-        .order("lesson_date", { ascending: true });
 
-      if (declinedData) {
-        declinedLessons = declinedData;
+      // PARENT NOTIFICATIONS
+      if (!isAdmin) {
+        const { data: parentNotifs } = await supabase
+          .from("lessons")
+          .select(
+            "id, lesson_date, duration, student_id, status, students(name)",
+          )
+          .in("student_id", studentIds)
+          .in("status", [
+            "declined",
+            "notif_approved",
+            "notif_admin_rescheduled",
+            "notif_admin_deleted_final",
+          ])
+          .order("lesson_date", { ascending: true });
+        if (parentNotifs) notifications = parentNotifs;
       }
+    }
+
+    // ADMIN NOTIFICATIONS
+    if (isAdmin) {
+      const { data: adminNotifs } = await supabase
+        .from("lessons")
+        .select("id, lesson_date, duration, student_id, status, students(name)")
+        .in("status", ["canceled", "notif_parent_rescheduled"])
+        .order("lesson_date", { ascending: true });
+      if (adminNotifs) notifications = adminNotifs;
     }
   }
 
@@ -44,7 +65,8 @@ export default async function Navbar() {
       label={label}
       activeStudents={activeStudents}
       deletedStudents={deletedStudents}
-      declinedLessons={declinedLessons}
+      declinedLessons={notifications}
+      isAdmin={isAdmin}
     />
   );
 }

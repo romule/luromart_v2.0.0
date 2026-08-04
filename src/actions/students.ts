@@ -3,41 +3,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 
-export async function getOrCreateStudent(parentId: any, studentName?: any) {
-  const supabase = await createClient();
-
-  // 1. Get the current user
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
-
-  // 2. Check if student exists
-  const { data: existingStudent } = await supabase
-    .from("students")
-    .select("id")
-    .match({ parent_id: user.id, name: studentName })
-    .single();
-
-  if (existingStudent) return existingStudent.id;
-
-  // 3. Create if not found
-  const { data: newStudent, error } = await supabase
-    .from("students")
-    .insert([
-      {
-        parent_id: user.id,
-        name: studentName,
-        experience_level: "Beginner",
-      },
-    ])
-    .select()
-    .single();
-
-  if (error) throw error;
-  return newStudent.id;
-}
-
 export async function addStudentAction(formData: FormData) {
   const supabase = await createClient();
   const {
@@ -47,6 +12,10 @@ export async function addStudentAction(formData: FormData) {
   if (!user) throw new Error("Unauthorized");
 
   const studentName = formData.get("name") as string;
+  const surname = formData.get("surname") as string;
+  const dob = formData.get("date_of_birth") as string;
+
+  // Default to Beginner, but Admin can edit it later
   const experienceLevel =
     (formData.get("experience_level") as string) || "Beginner";
 
@@ -54,13 +23,14 @@ export async function addStudentAction(formData: FormData) {
     {
       parent_id: user.id,
       name: studentName,
+      surname: surname,
+      date_of_birth: dob,
       experience_level: experienceLevel,
     },
   ]);
 
   if (error) throw new Error(error.message);
 
-  // This forces the dashboard to refresh instantly after adding the student
   revalidatePath("/dashboard");
   return { success: true };
 }
@@ -111,4 +81,46 @@ export async function permanentlyDeleteStudentAction(studentId: string) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard");
+}
+
+export async function updateStudentAction(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const studentId = formData.get("student_id") as string;
+  const name = formData.get("name") as string;
+  const surname = formData.get("surname") as string;
+  const dob = formData.get("date_of_birth") as string;
+  const experienceLevel = formData.get("experience_level") as string;
+
+  const isAdmin = user.email === process.env.ADMIN_EMAIL;
+
+  let updateData: any = {
+    name,
+    surname,
+    date_of_birth: dob,
+  };
+
+  // Only allow experience level to be updated if the user is an admin
+  if (isAdmin && experienceLevel) {
+    updateData.experience_level = experienceLevel;
+  }
+
+  // Ensure normal parents can only update their own children
+  const matchQuery = isAdmin
+    ? { id: studentId }
+    : { id: studentId, parent_id: user.id };
+
+  const { error } = await supabase
+    .from("students")
+    .update(updateData)
+    .match(matchQuery);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/dashboard");
+  return { success: true };
 }

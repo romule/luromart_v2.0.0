@@ -28,7 +28,7 @@ export default function StatusAlert({
   message,
   onClose,
 }: StatusAlertProps) {
-  // Shrunk the icons down to w-8 h-8
+  // UNTOUCHABLE Status Colors
   const config = {
     success: {
       icon: <CheckCircle2 className="w-8 h-8 text-emerald-500 mb-3" />,
@@ -48,22 +48,23 @@ export default function StatusAlert({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-sm p-8 text-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 z-[70] shadow-xl rounded-2xl">
+      {/* ADDED theme-dashboard and base background/border to override SPA colors */}
+      <DialogContent className="theme-dashboard sm:max-w-sm p-8 text-center bg-background border-border z-[70] shadow-xl rounded-2xl">
         <div className="flex flex-col items-center justify-center">
           {currentConfig.icon}
 
           <DialogHeader className="w-full">
-            <DialogTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 text-center w-full">
+            <DialogTitle className="text-xl font-bold text-foreground text-center w-full">
               {title}
             </DialogTitle>
-            <DialogDescription className="text-center text-sm text-slate-500 dark:text-slate-400 mt-2">
+            <DialogDescription className="text-center text-sm text-muted-foreground mt-2">
               {message}
             </DialogDescription>
           </DialogHeader>
 
           <Button
             onClick={onClose}
-            className={`w-full mt-6 h-11 text-base font-semibold shadow-sm rounded-xl ${currentConfig.buttonClass}`}
+            className={`w-full mt-6 h-11 text-base font-semibold shadow-sm rounded-xl ${currentConfig.buttonClass} cursor-pointer`}
           >
             Okay
           </Button>

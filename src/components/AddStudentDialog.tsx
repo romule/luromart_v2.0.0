@@ -11,61 +11,87 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { addStudentAction } from "@/actions/students";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 
 export default function AddStudentDialog({
   defaultOpen = false,
+  defaultSurname = "",
 }: {
   defaultOpen?: boolean;
+  defaultSurname?: string;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleAction(formData: FormData) {
+    setIsSubmitting(true);
     await addStudentAction(formData);
+    setIsSubmitting(false);
     setOpen(false);
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-indigo-600 text-white hover:bg-indigo-700 h-10 px-4 py-2">
+      <DialogTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 shadow-sm cursor-pointer">
         <Plus className="w-4 h-4 mr-2" />
-        Add Student
+        Add Child
       </DialogTrigger>
 
-      <DialogContent>
+      <DialogContent className="theme-dashboard bg-background border-border text-foreground sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Register a Student</DialogTitle>
+          <DialogTitle>Register your Child</DialogTitle>
         </DialogHeader>
-        <form action={handleAction} className="space-y-4 mt-4">
+        <form action={handleAction} className="space-y-4 mt-2">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-foreground/90">
+                First Name
+              </label>
+              <Input
+                name="name"
+                placeholder="E.g. Alex"
+                required
+                className="mt-1 bg-background border-input text-foreground focus-visible:ring-ring"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground/90">
+                Last Name (Surname)
+              </label>
+              {/* Pre-fills with the parent's last name automatically */}
+              <Input
+                name="surname"
+                defaultValue={defaultSurname}
+                placeholder="E.g. Smith"
+                required
+                className="mt-1 bg-background border-input text-foreground focus-visible:ring-ring"
+              />
+            </div>
+          </div>
+
           <div>
-            <label className="text-sm font-medium text-slate-700">
-              Student's Full Name
+            <label className="text-sm font-medium text-foreground/90">
+              Date of Birth
             </label>
             <Input
-              name="name"
-              placeholder="E.g. Alex"
+              type="date"
+              name="date_of_birth"
               required
-              className="mt-1"
+              className="mt-1 bg-background border-input text-foreground focus-visible:ring-ring cursor-pointer"
             />
           </div>
-          <div>
-            <label className="text-sm font-medium text-slate-700">
-              Experience Level
-            </label>
-            {/* Replaced Input with a native Select dropdown to protect data integrity */}
-            <select
-              name="experience_level"
-              defaultValue="Beginner"
-              required
-              className="mt-1 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
-            >
-              <option value="Beginner">Beginner</option>
-              <option value="Intermediate">Intermediate</option>
-              <option value="Advanced">Advanced</option>
-            </select>
-          </div>
-          <Button type="submit" className="w-full sm:w-auto">
-            Save Student
+
+          <input type="hidden" name="experience_level" value="Beginner" />
+
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer mt-4"
+          >
+            {isSubmitting ? (
+              <Loader2 size={16} className="animate-spin mr-2" />
+            ) : null}
+            Register Profile
           </Button>
         </form>
       </DialogContent>

@@ -2,30 +2,56 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Trash2, AlertCircle, Loader2, Settings } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  Trash2,
+  AlertCircle,
+  Loader2,
+  Settings,
+  FileText,
+  CheckCircle,
+  BookOpen,
+} from "lucide-react";
 import { softDeleteStudentAction } from "@/actions/students";
+import { dismissHomeworkNotifAction } from "@/actions/lessons";
+import LessonDialog from "@/components/LessonDialog";
+import StudentSettingsForm from "@/components/StudentSettingsForm";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 export default function StudentCard({ student }: { student: any }) {
+  const router = useRouter();
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [isHomeworkOpen, setIsHomeworkOpen] = useState(false);
+  const [isClearingHomework, setIsClearingHomework] = useState(false);
 
   const confirmDelete = async () => {
     setIsDeleting(true);
     await softDeleteStudentAction(student.id);
     setIsAlertOpen(false);
     setIsDeleting(false);
+    router.refresh();
   };
 
-  // Dynamic Color Logic for Experience Levels
+  const clearHomework = async () => {
+    setIsClearingHomework(true);
+    const formData = new FormData();
+    formData.append("student_id", student.id);
+    await dismissHomeworkNotifAction(formData);
+    setIsClearingHomework(false);
+    setIsHomeworkOpen(false);
+    router.refresh();
+  };
+
   const getLevelStyles = (level: string) => {
     const l = (level || "").toLowerCase();
     if (l.includes("beginner"))
@@ -44,92 +70,147 @@ export default function StudentCard({ student }: { student: any }) {
   };
 
   const levelStyles = getLevelStyles(student.experience_level);
+  let ageString = "";
+  if (student.date_of_birth) {
+    const ageDiffMs = Date.now() - new Date(student.date_of_birth).getTime();
+    ageString = ` • ${Math.abs(new Date(ageDiffMs).getUTCFullYear() - 1970)} yrs old`;
+  }
+
+  const hasHomework = student.pending_homework && !student.homework_notified;
 
   return (
     <>
-      <div className="relative p-6 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 shadow-sm transition-all duration-300 group overflow-hidden">
+      <div className="relative flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 p-5 border border-border rounded-2xl bg-muted/20 shadow-sm transition-all duration-300">
         {isNavigating && (
-          <div className="absolute inset-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-[1px] z-20 flex items-center justify-center">
-            <Loader2
-              size={24}
-              className="animate-spin text-indigo-600 dark:text-indigo-400"
-            />
+          <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px] z-20 flex items-center justify-center rounded-2xl">
+            <Loader2 size={24} className="animate-spin text-primary" />
           </div>
         )}
 
-        <div className="flex justify-between items-start gap-4">
-          <div className="relative flex-1 min-w-0">
-            <h3
-              className="font-bold text-lg md:text-xl text-slate-900 dark:text-slate-100 whitespace-nowrap overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden"
-              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-            >
-              {student.name}
-            </h3>
-            <div className="absolute top-0 right-0 h-full w-8 bg-gradient-to-l from-white dark:from-slate-900 to-transparent pointer-events-none"></div>
-          </div>
-
-          <div className="shrink-0 flex items-center gap-1 -mt-2 -mr-2 bg-slate-50 dark:bg-slate-950 p-1 rounded-lg border border-slate-100 dark:border-slate-800 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10">
-            <Link
-              href={`/dashboard/student/${student.id}`}
-              onClick={() => setIsNavigating(true)}
-              className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:rotate-90 transition-all rounded-md cursor-pointer"
-              title="Manage Student"
-            >
+        <div className="absolute top-4 right-4 z-10">
+          <Dialog>
+            <DialogTrigger className="p-2 text-muted-foreground hover:text-primary bg-background border border-border hover:bg-muted rounded-full transition-all cursor-pointer shadow-sm">
               <Settings size={18} />
-            </Link>
-            <div className="w-px h-4 bg-slate-200 dark:bg-slate-800"></div>
-            <button
-              onClick={() => setIsAlertOpen(true)}
-              className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-500 rounded-md transition-colors cursor-pointer"
-              title="Move to Trash"
-            >
-              <Trash2 size={18} />
-            </button>
-          </div>
+            </DialogTrigger>
+            <DialogContent className="theme-dashboard sm:max-w-xl bg-background border-border p-0 overflow-hidden">
+              <DialogHeader className="p-6 pb-2">
+                <DialogTitle className="text-2xl font-bold text-foreground">
+                  Edit Profile
+                </DialogTitle>
+              </DialogHeader>
+              <div className="px-6 pb-6">
+                <StudentSettingsForm student={student} isAdmin={false} />
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
-        <p
-          className={`text-sm mt-2 flex items-center gap-2 font-medium ${levelStyles.text}`}
-        >
-          <span
-            className={`inline-block w-2 h-2 rounded-full ${levelStyles.dot}`}
-          ></span>
-          Level: {student.experience_level}
-        </p>
+        <div className="w-full xl:w-auto pr-12">
+          <h3 className="font-bold text-xl text-foreground">
+            {student.name} {student.surname}
+          </h3>
+          <p
+            className={`text-sm mt-1 flex items-center gap-2 font-medium ${levelStyles.text}`}
+          >
+            <span
+              className={`inline-block w-2 h-2 rounded-full ${levelStyles.dot}`}
+            ></span>
+            Level: {student.experience_level} {ageString}
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full xl:w-auto mt-4 xl:mt-0">
+          {hasHomework && (
+            <button
+              onClick={() => setIsHomeworkOpen(true)}
+              className="flex items-center justify-center gap-2 h-11 px-5 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl text-sm font-bold transition-colors cursor-pointer shadow-sm animate-pulse"
+            >
+              <AlertCircle size={18} /> New Homework!
+            </button>
+          )}
+
+          <LessonDialog
+            mode="mobile-schedule"
+            studentId={student.id}
+            studentName={student.name}
+          />
+
+          <Link
+            href={`/dashboard/student/${student.id}`}
+            onClick={() => setIsNavigating(true)}
+            className="flex items-center justify-center gap-2 h-11 px-5 bg-background hover:bg-muted text-foreground border border-border transition-colors rounded-xl cursor-pointer shadow-sm text-sm font-bold whitespace-nowrap"
+          >
+            <FileText size={18} /> History & Info
+          </Link>
+
+          <button
+            onClick={() => setIsAlertOpen(true)}
+            className="flex items-center justify-center gap-2 h-11 px-5 bg-background hover:bg-destructive/10 text-destructive border border-border transition-colors rounded-xl cursor-pointer shadow-sm text-sm font-bold whitespace-nowrap"
+          >
+            <Trash2 size={18} /> Remove
+          </button>
+        </div>
       </div>
 
-      <Dialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-        <DialogContent className="sm:max-w-md p-6 z-[60] dark:bg-slate-900 dark:border-slate-800">
+      <Dialog open={isHomeworkOpen} onOpenChange={setIsHomeworkOpen}>
+        <DialogContent className="theme-dashboard sm:max-w-md p-6 z-[60] bg-background border-border text-foreground">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-500 text-xl font-bold">
-              <AlertCircle size={24} />
-              Move to Trash?
+            <DialogTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-400 text-xl font-bold">
+              <BookOpen size={24} /> Practice Assignment
             </DialogTitle>
-            <DialogDescription className="pt-2 text-base text-slate-500 dark:text-slate-400">
+          </DialogHeader>
+          <div className="p-4 bg-muted/30 border border-border rounded-xl mt-2">
+            <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+              {student.pending_homework}
+            </p>
+          </div>
+          <div className="flex justify-end mt-4">
+            <Button
+              className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer"
+              onClick={clearHomework}
+              disabled={isClearingHomework}
+            >
+              {isClearingHomework ? (
+                <Loader2 className="animate-spin mr-2" size={16} />
+              ) : (
+                <CheckCircle className="mr-2" size={16} />
+              )}{" "}
+              Got it!
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+        <DialogContent className="theme-dashboard sm:max-w-md p-6 z-[60] bg-background border-border text-foreground">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive text-xl font-bold">
+              <AlertCircle size={24} /> Remove Profile?
+            </DialogTitle>
+            <DialogDescription className="pt-2 text-base text-muted-foreground">
               Are you sure you want to remove{" "}
-              <strong className="dark:text-slate-200">{student.name}</strong>{" "}
-              from your active roster? They will be moved to the Trash Can.
+              <strong className="text-foreground">{student.name}</strong> from
+              your active roster? This will cancel their upcoming classes.
             </DialogDescription>
           </DialogHeader>
-
-          <div className="flex flex-row items-center justify-between gap-3 mt-4 w-full">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 w-full">
             <Button
               variant="outline"
               onClick={() => setIsAlertOpen(false)}
               disabled={isDeleting}
-              className="flex-1 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
+              className="w-full sm:flex-1 border-border hover:bg-muted text-foreground cursor-pointer"
             >
               Cancel
             </Button>
             <Button
-              className="flex-1 bg-amber-500 hover:bg-amber-600 text-white transition-colors cursor-pointer"
+              className="w-full sm:flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-colors cursor-pointer"
               onClick={confirmDelete}
               disabled={isDeleting}
             >
               {isDeleting ? (
                 <Loader2 size={18} className="animate-spin mr-2" />
-              ) : null}
-              {isDeleting ? "Moving..." : "Move to trash"}
+              ) : null}{" "}
+              Remove
             </Button>
           </div>
         </DialogContent>

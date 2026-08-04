@@ -35,12 +35,12 @@ export default function TrashCard({ student }: { student: any }) {
 
   return (
     <>
-      <div className="flex items-center justify-between p-4 border border-slate-200 rounded-xl bg-white shadow-sm">
+      <div className="flex items-center justify-between p-5 border border-border rounded-2xl bg-card shadow-sm transition-all duration-300 hover:border-primary/50">
         <div>
-          <h3 className="font-bold text-lg text-slate-900 text-lg md:text-xl">
+          <h3 className="font-bold text-foreground text-lg md:text-xl">
             {student.name}
           </h3>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Level: {student.experience_level}
           </p>
         </div>
@@ -48,43 +48,46 @@ export default function TrashCard({ student }: { student: any }) {
           <button
             onClick={handleRestore}
             disabled={isProcessing}
-            className="p-2 sm:w-auto text-emerald-600 hover:text-emerald-700 transition-all duration-200 active:scale-90 hover:bg-slate-100 rounded-lg disabled:opacity-50"
+            className="p-3 sm:w-auto text-emerald-600 dark:text-emerald-500 hover:bg-emerald-500/10 transition-all duration-200 active:scale-90 rounded-xl disabled:opacity-50"
             title="Restore to Active Roster"
           >
-            <RefreshCcw size={18} />
+            <RefreshCcw size={20} />
           </button>
           <button
             onClick={() => setIsAlertOpen(true)}
             disabled={isProcessing}
-            className="p-2 sm:w-auto text-red-600 hover:text-red-700 transition-all duration-200 active:scale-90 hover:bg-slate-100 rounded-lg disabled:opacity-50"
+            className="p-3 sm:w-auto text-destructive hover:bg-destructive/10 transition-all duration-200 active:scale-90 rounded-xl disabled:opacity-50"
             title="Permanently Delete"
           >
-            <Trash2 size={18} />
+            <Trash2 size={20} />
           </button>
         </div>
       </div>
 
-      {/* Centered Warning Dialog */}
       <Dialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="theme-dashboard sm:max-w-md bg-background border-border text-foreground">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
+            <DialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle size={20} />
               Permanently Delete?
             </DialogTitle>
-            <DialogDescription className="pt-2 text-slate-600">
+            <DialogDescription className="pt-2 text-muted-foreground">
               Are you sure you want to permanently delete{" "}
               <strong>{student.name}</strong>? This will wipe their profile and
               all associated data. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 sm:justify-end mt-4">
-            <Button variant="outline" onClick={() => setIsAlertOpen(false)}>
+            <Button
+              variant="outline"
+              className="border-border hover:bg-muted"
+              onClick={() => setIsAlertOpen(false)}
+            >
               Cancel
             </Button>
             <Button
               variant="destructive"
-              className="sm:w-auto bg-red-600 hover:bg-red-700 text-white"
+              className="sm:w-auto bg-destructive hover:bg-destructive/90 text-destructive-foreground"
               onClick={handlePermanentDelete}
               disabled={isProcessing}
             >

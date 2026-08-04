@@ -2,11 +2,13 @@
 
 import { useState, useMemo } from "react";
 import { format, parse } from "date-fns";
+import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
   DialogTrigger,
+  DialogHeader,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -27,20 +29,16 @@ import {
   User,
   Users,
 } from "lucide-react";
-
 import {
   generateTimeSlots,
   isDateInPast,
   createUtcTimestamp,
 } from "@/lib/time-utils";
-
 import StatusAlert, { StatusAlertState } from "./StatusAlert";
 
-// 🎨 Colorful palettes for SCHEDULED lessons only
 const colorPalettes = [
   {
     bg: "bg-blue-50/80 dark:bg-blue-500/10",
-    hover: "hover:bg-blue-100/80 dark:hover:bg-blue-500/20",
     border: "border-blue-200 dark:border-blue-500/30",
     text: "text-blue-900 dark:text-blue-200",
     accent: "text-blue-500 dark:text-blue-400",
@@ -48,7 +46,6 @@ const colorPalettes = [
   },
   {
     bg: "bg-emerald-50/80 dark:bg-emerald-500/10",
-    hover: "hover:bg-emerald-100/80 dark:hover:bg-emerald-500/20",
     border: "border-emerald-200 dark:border-emerald-500/30",
     text: "text-emerald-900 dark:text-emerald-200",
     accent: "text-emerald-500 dark:text-emerald-400",
@@ -57,7 +54,6 @@ const colorPalettes = [
   },
   {
     bg: "bg-amber-50/80 dark:bg-amber-500/10",
-    hover: "hover:bg-amber-100/80 dark:hover:bg-amber-500/20",
     border: "border-amber-200 dark:border-amber-500/30",
     text: "text-amber-900 dark:text-amber-200",
     accent: "text-amber-500 dark:text-amber-400",
@@ -66,7 +62,6 @@ const colorPalettes = [
   },
   {
     bg: "bg-fuchsia-50/80 dark:bg-fuchsia-500/10",
-    hover: "hover:bg-fuchsia-100/80 dark:hover:bg-fuchsia-500/20",
     border: "border-fuchsia-200 dark:border-fuchsia-500/30",
     text: "text-fuchsia-900 dark:text-fuchsia-200",
     accent: "text-fuchsia-500 dark:text-fuchsia-400",
@@ -75,7 +70,6 @@ const colorPalettes = [
   },
   {
     bg: "bg-cyan-50/80 dark:bg-cyan-500/10",
-    hover: "hover:bg-cyan-100/80 dark:hover:bg-cyan-500/20",
     border: "border-cyan-200 dark:border-cyan-500/30",
     text: "text-cyan-900 dark:text-cyan-200",
     accent: "text-cyan-500 dark:text-cyan-400",
@@ -83,7 +77,6 @@ const colorPalettes = [
   },
   {
     bg: "bg-rose-50/80 dark:bg-rose-500/10",
-    hover: "hover:bg-rose-100/80 dark:hover:bg-rose-500/20",
     border: "border-rose-200 dark:border-rose-500/30",
     text: "text-rose-900 dark:text-rose-200",
     accent: "text-rose-500 dark:text-rose-400",
@@ -95,8 +88,9 @@ export default function LessonDialog({
   lesson,
   mode,
   studentId,
-  studentName, // <-- Used to determine if we are on Dashboard or Student Profile
+  studentName,
 }: any) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [lessonType, setLessonType] = useState<"individual" | "group" | null>(
     null,
@@ -104,9 +98,6 @@ export default function LessonDialog({
   const [availableGroups, setAvailableGroups] = useState<any[]>([]);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [pendingDeleteData, setPendingDeleteData] = useState<FormData | null>(
-    null,
-  );
 
   const [alertState, setAlertState] = useState<StatusAlertState>({
     isOpen: false,
@@ -115,18 +106,10 @@ export default function LessonDialog({
     message: "",
   });
 
-  const closeAlert = async () => {
+  const closeAlert = () => {
     setAlertState((prev) => ({ ...prev, isOpen: false }));
-    if (pendingDeleteData) {
-      setIsSubmitting(true);
-      try {
-        await cancelLessonAction(pendingDeleteData);
-        setOpen(false);
-      } finally {
-        setIsSubmitting(false);
-        setPendingDeleteData(null);
-      }
-    }
+    setOpen(false);
+    router.refresh();
   };
 
   const handleSelectGroupPath = async () => {
@@ -144,7 +127,6 @@ export default function LessonDialog({
   const durationOptions = ["30", "60", "90", "120"];
   const timeSlots = useMemo(() => generateTimeSlots("09:00", "20:00", 30), []);
 
-  // 1. VIEW MODE (HISTORY)
   if (mode === "view") {
     const d = new Date(lesson.lesson_date);
     const lessonDate = d.toLocaleDateString(undefined, {
@@ -181,27 +163,29 @@ export default function LessonDialog({
             </span>
           </div>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-md dark:bg-slate-950 dark:border-slate-800">
-          <DialogTitle className="text-xl border-b border-slate-200 dark:border-slate-800 pb-4 text-slate-900 dark:text-slate-100">
-            Lesson Details
-          </DialogTitle>
+        <DialogContent className="theme-dashboard sm:max-w-md bg-background border-border text-foreground">
+          <DialogHeader>
+            <DialogTitle className="text-xl border-b border-border pb-4">
+              Lesson Details
+            </DialogTitle>
+          </DialogHeader>
           <div className="space-y-6 py-2">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">
                   Date & Time
                 </h4>
-                <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">
+                <p className="text-sm font-medium">
                   {lessonDate}
                   <br />
                   {lessonTime}
                 </p>
               </div>
               <div>
-                <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">
                   Duration
                 </h4>
-                <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">
+                <p className="text-sm font-medium">
                   {lesson.duration
                     ? `${lesson.duration} minutes`
                     : "60 minutes"}
@@ -214,7 +198,6 @@ export default function LessonDialog({
     );
   }
 
-  // 2. UPCOMING MODE (UPDATE / VIEW SCHEDULED)
   if (mode === "upcoming") {
     const d = new Date(lesson.lesson_date);
     const lessonDateStr = d.toLocaleDateString(undefined, {
@@ -240,7 +223,6 @@ export default function LessonDialog({
         : 0;
     const palette = colorPalettes[persistentColorId % colorPalettes.length];
 
-    // Gray palette specifically for pending UI
     const pendingPalette = {
       bg: "bg-slate-50 dark:bg-slate-900/50",
       border: "border-slate-300 dark:border-slate-700 border-dashed",
@@ -251,8 +233,6 @@ export default function LessonDialog({
     };
 
     const activePalette = isPending ? pendingPalette : palette;
-
-    // Outer Wrapper Styling
     const cardClasses = isOngoing
       ? "w-full text-left rounded-xl transition-all cursor-pointer shadow-md group border-2 border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-4 ring-indigo-500/20 overflow-hidden"
       : `w-full text-left border rounded-xl transition-all cursor-pointer shadow-sm group overflow-hidden ${activePalette.bg} ${activePalette.border} hover:opacity-80`;
@@ -271,7 +251,6 @@ export default function LessonDialog({
           }}
         >
           <DialogTrigger className={cardClasses}>
-            {/* PARENT DASHBOARD LAYOUT (Includes Student Name on Left) */}
             {studentName ? (
               <div className="flex items-stretch w-full">
                 <div
@@ -289,7 +268,6 @@ export default function LessonDialog({
                     <p
                       className={`font-bold text-sm ${isOngoing ? "text-indigo-700 dark:text-indigo-300" : activePalette.text}`}
                     >
-                      {/* FIX: Render the exact date here, no more hardcoded "PENDING" text */}
                       {isOngoing ? "ONGOING" : lessonDateStr}
                     </p>
                     <div className="flex items-center gap-1 mt-0.5 mb-1">
@@ -321,13 +299,11 @@ export default function LessonDialog({
                 </div>
               </div>
             ) : (
-              /* STUDENT PROFILE LAYOUT (Stretches across, right-aligned pills) */
               <div className="flex justify-between items-center w-full p-4">
                 <div className="flex flex-col gap-1 text-left">
                   <p
                     className={`font-bold text-sm ${isOngoing ? "text-indigo-700 dark:text-indigo-300" : activePalette.text}`}
                   >
-                    {/* FIX: Render the exact date here, no more hardcoded "PENDING" text */}
                     {isOngoing ? "ONGOING" : lessonDateStr}
                   </p>
                   <div className="flex items-center gap-1.5 mt-0.5">
@@ -360,31 +336,43 @@ export default function LessonDialog({
             )}
           </DialogTrigger>
 
-          <DialogContent className="sm:max-w-md w-[95%] p-6 max-h-[90vh] overflow-y-auto rounded-xl dark:bg-slate-950 dark:border-slate-800">
-            <DialogTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">
-              Manage Lesson
-            </DialogTitle>
-            <div className="flex gap-3 pb-4 mb-2 border-b border-slate-100 dark:border-slate-800">
+          <DialogContent className="theme-dashboard sm:max-w-2xl w-[95%] p-6 max-h-[90vh] overflow-y-auto rounded-xl bg-background border-border text-foreground">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold mb-2">
+                Manage Lesson
+              </DialogTitle>
+            </DialogHeader>
+            <div className="flex gap-3 pb-4 mb-2 border-b border-border">
               <Button
                 type="submit"
                 form={`update-form-${lesson.id}`}
                 disabled={isSubmitting || !selectedDate || !selectedTime}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white h-11 rounded-xl shadow-md cursor-pointer"
+                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground h-11 rounded-xl shadow-md cursor-pointer"
               >
                 {isSubmitting ? "Wait..." : "Update Details"}
               </Button>
               <form
                 action={async (formData) => {
                   if (isSubmitting) return;
+                  setIsSubmitting(true);
                   formData.append("lesson_id", lesson.id);
                   formData.append("student_id", studentId);
-                  setPendingDeleteData(formData);
-                  setAlertState({
-                    isOpen: true,
-                    status: "canceled",
-                    title: "Lesson Canceled",
-                    message: "Permanently removed.",
-                  });
+                  const result = await cancelLessonAction(formData);
+                  setIsSubmitting(false);
+                  if (result?.error)
+                    setAlertState({
+                      isOpen: true,
+                      status: "error",
+                      title: "Error",
+                      message: result.error,
+                    });
+                  else
+                    setAlertState({
+                      isOpen: true,
+                      status: "canceled",
+                      title: "Canceled",
+                      message: "Lesson has been canceled.",
+                    });
                 }}
                 className="flex-1"
               >
@@ -392,7 +380,7 @@ export default function LessonDialog({
                   type="submit"
                   variant="destructive"
                   disabled={isSubmitting}
-                  className="w-full bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 dark:text-red-400 border-none h-11 rounded-xl cursor-pointer"
+                  className="w-full h-11 rounded-xl cursor-pointer"
                 >
                   <CalendarX2 size={16} className="mr-2" /> Cancel
                 </Button>
@@ -425,76 +413,82 @@ export default function LessonDialog({
                       title: "Conflict",
                       message: result.error,
                     });
-                  else {
-                    setOpen(false);
+                  else
                     setAlertState({
                       isOpen: true,
                       status: "success",
                       title: "Updated!",
                       message: "Schedule changed.",
                     });
-                  }
                 } finally {
                   setIsSubmitting(false);
                 }
               }}
               className="space-y-6 pt-2"
             >
-              <div className="space-y-3">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center">
-                  <CalendarPlus className="mr-2 h-4 w-4 text-slate-500 dark:text-slate-400" />{" "}
-                  Update Date
-                </label>
-                <div className="flex justify-center border border-slate-100 dark:border-slate-800 rounded-xl p-2 bg-slate-50/50 dark:bg-slate-900/50 shadow-sm">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    disabled={isDateInPast}
-                    className="bg-transparent dark:text-slate-100 cursor-pointer"
-                  />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <label className="text-sm font-medium flex items-center text-foreground">
+                    <CalendarPlus className="mr-2 h-4 w-4 text-muted-foreground" />{" "}
+                    Update Date
+                  </label>
+                  <div className="flex justify-center border border-border rounded-xl p-2 bg-muted/50 shadow-sm">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={setSelectedDate}
+                      disabled={isDateInPast}
+                      className="bg-transparent cursor-pointer text-foreground"
+                    />
+                  </div>
                 </div>
+
+                {selectedDate && (
+                  <div className="space-y-6 animate-in fade-in transition-all duration-300">
+                    <div className="space-y-3">
+                      <label className="text-sm font-medium flex items-center text-foreground">
+                        <Timer className="mr-2 h-4 w-4 text-muted-foreground" />{" "}
+                        Update Duration
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {durationOptions.map((dur) => (
+                          <button
+                            key={dur}
+                            type="button"
+                            onClick={() => setSelectedDuration(dur)}
+                            className={`w-full h-10 text-sm font-medium rounded-xl border flex items-center justify-center cursor-pointer transition-colors ${selectedDuration === dur ? "bg-primary text-primary-foreground border-primary shadow-md" : "bg-background border-border hover:bg-muted text-foreground"}`}
+                          >
+                            {dur}m
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <label className="text-sm font-medium flex items-center text-foreground">
+                        <Clock className="mr-2 h-4 w-4 text-muted-foreground" />{" "}
+                        Update Time
+                      </label>
+                      <div className="max-h-[160px] overflow-y-scroll pr-2 border border-border bg-muted/20 p-2 rounded-xl">
+                        <div className="grid grid-cols-2 gap-2 pb-2">
+                          {timeSlots.map((slot) => (
+                            <button
+                              key={slot}
+                              type="button"
+                              onClick={() => setSelectedTime(slot)}
+                              className={`w-full h-10 text-sm font-medium rounded-xl border flex items-center justify-center cursor-pointer transition-colors ${selectedTime === slot ? "bg-primary text-primary-foreground border-primary shadow-md" : "bg-background border-border hover:bg-muted text-foreground"}`}
+                            >
+                              {format(
+                                parse(slot, "HH:mm", new Date()),
+                                "h:mm a",
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              {selectedDate && (
-                <div className="animate-in fade-in space-y-6">
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center">
-                      <Timer className="mr-2 h-4 w-4 text-slate-500 dark:text-slate-400" />{" "}
-                      Update Duration
-                    </label>
-                    <div className="grid grid-cols-4 gap-2">
-                      {durationOptions.map((dur) => (
-                        <button
-                          key={dur}
-                          type="button"
-                          onClick={() => setSelectedDuration(dur)}
-                          className={`w-full h-10 text-sm font-medium rounded-xl border flex items-center justify-center cursor-pointer transition-colors ${selectedDuration === dur ? "bg-indigo-600 text-white border-indigo-600 shadow-md" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"}`}
-                        >
-                          {dur}m
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center">
-                      <Clock className="mr-2 h-4 w-4 text-slate-500 dark:text-slate-400" />{" "}
-                      Update Time
-                    </label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pb-2">
-                      {timeSlots.map((slot) => (
-                        <button
-                          key={slot}
-                          type="button"
-                          onClick={() => setSelectedTime(slot)}
-                          className={`w-full h-11 text-sm font-medium rounded-xl border flex items-center justify-center cursor-pointer transition-colors ${selectedTime === slot ? "bg-indigo-600 text-white border-indigo-600 shadow-md" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"}`}
-                        >
-                          {format(parse(slot, "HH:mm", new Date()), "h:mm a")}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
             </form>
           </DialogContent>
         </Dialog>
@@ -503,298 +497,313 @@ export default function LessonDialog({
     );
   }
 
-  // 4. GLOBAL SCHEDULE MODE
   if (mode === "mobile-schedule") {
     return (
-      <Dialog
-        open={open}
-        onOpenChange={(val) => {
-          setOpen(val);
-          if (val) {
-            setSelectedDate(undefined);
-            setSelectedTime("");
-            setSelectedDuration("60");
-            setLessonType(null);
-          }
-        }}
-      >
-        <DialogTrigger className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 active:scale-95 transition-all shadow-md cursor-pointer">
-          <CalendarPlus size={20} /> Schedule Lesson
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-md w-[95%] max-h-[90vh] overflow-y-auto rounded-xl dark:bg-slate-950 dark:border-slate-800">
-          <DialogTitle className="text-xl font-bold text-slate-900 dark:text-slate-100">
-            Select Lesson Type
-          </DialogTitle>
+      <>
+        <Dialog
+          open={open}
+          onOpenChange={(val) => {
+            setOpen(val);
+            if (val) {
+              setSelectedDate(undefined);
+              setSelectedTime("");
+              setSelectedDuration("60");
+              setLessonType(null);
+            }
+          }}
+        >
+          <DialogTrigger className="w-full sm:w-auto h-11 px-6 bg-primary text-primary-foreground rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-95 transition-all shadow-sm cursor-pointer whitespace-nowrap">
+            <CalendarPlus size={18} /> Schedule Lesson
+          </DialogTrigger>
 
-          {!lessonType && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-              <button
-                onClick={() => setLessonType("individual")}
-                className="flex flex-col items-center justify-center gap-3 p-6 border-2 border-slate-100 dark:border-slate-800 rounded-2xl hover:border-emerald-500 dark:hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 group cursor-pointer transition-colors"
-              >
-                <div className="w-12 h-12 bg-slate-100 dark:bg-slate-900 rounded-full flex items-center justify-center group-hover:bg-emerald-100 dark:group-hover:bg-emerald-500/20 transition-colors">
-                  <User
-                    className="text-slate-500 dark:text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400"
-                    size={24}
-                  />
-                </div>
-                <div className="text-center">
-                  <h3 className="font-bold text-slate-800 dark:text-slate-200">
-                    1-on-1 Lesson
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Book a private session
-                  </p>
-                </div>
-              </button>
-              <button
-                onClick={handleSelectGroupPath}
-                className="flex flex-col items-center justify-center gap-3 p-6 border-2 border-slate-100 dark:border-slate-800 rounded-2xl hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 group cursor-pointer transition-colors"
-              >
-                <div className="w-12 h-12 bg-slate-100 dark:bg-slate-900 rounded-full flex items-center justify-center group-hover:bg-indigo-100 dark:group-hover:bg-indigo-500/20 transition-colors">
-                  <Users
-                    className="text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400"
-                    size={24}
-                  />
-                </div>
-                <div className="text-center">
-                  <h3 className="font-bold text-slate-800 dark:text-slate-200">
-                    Group Class
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Join an upcoming group
-                  </p>
-                </div>
-              </button>
-            </div>
-          )}
-
-          {lessonType === "individual" && (
-            <form
-              action={async (formData) => {
-                if (isSubmitting || !selectedDate || !selectedTime) return;
-                setIsSubmitting(true);
-                formData.append("student_id", studentId);
-                formData.append("date", format(selectedDate, "yyyy-MM-dd"));
-                formData.append("time", selectedTime);
-                formData.append("duration", selectedDuration);
-                formData.append(
-                  "utc_timestamp",
-                  createUtcTimestamp(selectedDate, selectedTime),
-                );
-                const result = await scheduleLessonAction(formData);
-                setIsSubmitting(false);
-                if (result?.error)
-                  setAlertState({
-                    isOpen: true,
-                    status: "error",
-                    title: "Conflict",
-                    message: result.error,
-                  });
-                else {
-                  setOpen(false);
-                  setAlertState({
-                    isOpen: true,
-                    status: "success",
-                    title: "Request Sent!",
-                    message: "The lesson is pending admin approval.",
-                  });
-                }
-              }}
-              className="space-y-6 pt-2"
-            >
-              <div className="space-y-3">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Step 1: Select Date
-                </label>
-                <div className="flex justify-center border border-slate-100 dark:border-slate-800 rounded-xl p-2 bg-slate-50/50 dark:bg-slate-900/50 shadow-sm">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    disabled={isDateInPast}
-                    className="bg-transparent dark:text-slate-100 cursor-pointer"
-                  />
-                </div>
+          <DialogContent className="theme-dashboard sm:max-w-3xl w-[95%] max-h-[90vh] overflow-y-auto rounded-xl bg-background border-border text-foreground">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold">
+                Select Lesson Type
+              </DialogTitle>
+            </DialogHeader>
+            {!lessonType && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+                <button
+                  onClick={() => setLessonType("individual")}
+                  className="flex flex-col items-center justify-center gap-3 p-6 border-2 border-border rounded-2xl hover:border-primary hover:bg-muted group cursor-pointer transition-colors"
+                >
+                  <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <User
+                      className="text-muted-foreground group-hover:text-primary"
+                      size={24}
+                    />
+                  </div>
+                  <div className="text-center">
+                    <h3 className="font-bold text-foreground">1-on-1 Lesson</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Book a private session
+                    </p>
+                  </div>
+                </button>
+                <button
+                  onClick={handleSelectGroupPath}
+                  className="flex flex-col items-center justify-center gap-3 p-6 border-2 border-border rounded-2xl hover:border-primary hover:bg-muted group cursor-pointer transition-colors"
+                >
+                  <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <Users
+                      className="text-muted-foreground group-hover:text-primary"
+                      size={24}
+                    />
+                  </div>
+                  <div className="text-center">
+                    <h3 className="font-bold text-foreground">Group Class</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Join an upcoming group
+                    </p>
+                  </div>
+                </button>
               </div>
+            )}
 
-              {selectedDate && (
-                <div className="space-y-4 pt-2 animate-in fade-in border-t border-slate-100 dark:border-slate-800">
-                  <div className="space-y-3 pt-2">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center">
-                      <Timer className="mr-2 h-4 w-4 text-slate-500 dark:text-slate-400" />{" "}
-                      Step 2: Select Duration
+            {lessonType === "individual" && (
+              <form
+                action={async (formData) => {
+                  if (isSubmitting || !selectedDate || !selectedTime) return;
+                  setIsSubmitting(true);
+                  try {
+                    formData.append("student_id", studentId);
+                    formData.append("date", format(selectedDate, "yyyy-MM-dd"));
+                    formData.append("time", selectedTime);
+                    formData.append("duration", selectedDuration);
+                    formData.append(
+                      "utc_timestamp",
+                      createUtcTimestamp(selectedDate, selectedTime),
+                    );
+                    const result = await scheduleLessonAction(formData);
+                    if (result?.error)
+                      setAlertState({
+                        isOpen: true,
+                        status: "error",
+                        title: "Conflict",
+                        message: result.error,
+                      });
+                    else
+                      setAlertState({
+                        isOpen: true,
+                        status: "success",
+                        title: "Request Sent!",
+                        message: "The lesson is pending admin approval.",
+                      });
+                  } catch (err: any) {
+                    setAlertState({
+                      isOpen: true,
+                      status: "error",
+                      title: "System Error",
+                      message: err.message || "An error occurred.",
+                    });
+                  } finally {
+                    setIsSubmitting(false);
+                  }
+                }}
+                className="space-y-6 pt-2"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-foreground">
+                      Step 1: Select Date
                     </label>
-                    <div className="grid grid-cols-4 gap-2">
-                      {durationOptions.map((dur) => (
-                        <button
-                          key={dur}
-                          type="button"
-                          onClick={() => setSelectedDuration(dur)}
-                          className={`w-full h-10 text-xs sm:text-sm font-medium rounded-xl border flex items-center justify-center cursor-pointer transition-colors ${selectedDuration === dur ? "bg-emerald-600 text-white border-emerald-600 shadow-md" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"}`}
-                        >
-                          {dur}m
-                        </button>
-                      ))}
+                    <div className="flex justify-center border border-border rounded-xl p-2 bg-muted/50 shadow-sm">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={setSelectedDate}
+                        disabled={isDateInPast}
+                        className="bg-transparent cursor-pointer text-foreground"
+                      />
                     </div>
                   </div>
-                  <div className="space-y-3 border-t border-slate-100 dark:border-slate-800 pt-4">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center">
-                      <Clock className="mr-2 h-4 w-4 text-slate-500 dark:text-slate-400" />{" "}
-                      Step 3: Select Time
-                    </label>
-                    <div className="max-h-[200px] overflow-y-scroll pr-3">
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pb-2">
-                        {timeSlots.map((slot) => (
-                          <button
-                            key={slot}
-                            type="button"
-                            onClick={() => setSelectedTime(slot)}
-                            className={`w-full h-11 text-sm font-medium rounded-xl border flex items-center justify-center cursor-pointer transition-colors ${selectedTime === slot ? "bg-emerald-600 text-white border-emerald-600 shadow-md" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"}`}
-                          >
-                            {format(parse(slot, "HH:mm", new Date()), "h:mm a")}
-                          </button>
-                        ))}
+
+                  {selectedDate && (
+                    <div className="space-y-6 animate-in fade-in transition-all duration-300">
+                      <div className="space-y-3">
+                        <label className="text-sm font-medium flex items-center text-foreground">
+                          <Timer className="mr-2 h-4 w-4 text-muted-foreground" />{" "}
+                          Step 2: Select Duration
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {durationOptions.map((dur) => (
+                            <button
+                              key={dur}
+                              type="button"
+                              onClick={() => setSelectedDuration(dur)}
+                              className={`w-full h-10 text-sm font-medium rounded-xl border flex items-center justify-center cursor-pointer transition-colors ${selectedDuration === dur ? "bg-primary text-primary-foreground border-primary shadow-md" : "bg-background border-border hover:bg-muted text-foreground"}`}
+                            >
+                              {dur}m
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div className="flex gap-3 mt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setLessonType(null)}
-                  className="h-12 px-4 rounded-xl text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
-                >
-                  Back
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={isSubmitting || !selectedDate || !selectedTime}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white h-12 text-lg rounded-xl shadow-md cursor-pointer"
-                >
-                  {isSubmitting ? "Sending..." : "Request Schedule"}
-                </Button>
-              </div>
-            </form>
-          )}
-
-          {lessonType === "group" && (
-            <div className="flex flex-col py-4 space-y-4">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">
-                Available Classes
-              </h3>
-              {isLoadingGroups ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <div className="w-8 h-8 border-4 border-indigo-200 dark:border-indigo-900 border-t-indigo-600 dark:border-t-indigo-400 rounded-full animate-spin"></div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-4 font-medium">
-                    Fetching schedule...
-                  </p>
-                </div>
-              ) : availableGroups.length > 0 ? (
-                <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2">
-                  {availableGroups.map((group) => {
-                    const d = new Date(group.class_date);
-                    return (
-                      <div
-                        key={group.id}
-                        className="p-4 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-indigo-200 dark:hover:border-indigo-500/50 transition-colors"
-                      >
-                        <div>
-                          <h4 className="font-bold text-slate-800 dark:text-slate-200">
-                            {group.title}
-                          </h4>
-                          <div className="flex items-center gap-3 mt-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
-                            <span className="flex items-center gap-1">
-                              <CalendarPlus size={12} />{" "}
-                              {d.toLocaleDateString(undefined, {
-                                weekday: "short",
-                                month: "short",
-                                day: "numeric",
-                              })}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock size={12} />{" "}
-                              {d.toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Timer size={12} /> {group.duration}m
-                            </span>
+                      <div className="space-y-3">
+                        <label className="text-sm font-medium flex items-center text-foreground">
+                          <Clock className="mr-2 h-4 w-4 text-muted-foreground" />{" "}
+                          Step 3: Select Time
+                        </label>
+                        <div className="max-h-[160px] overflow-y-scroll pr-2 border border-border bg-muted/20 p-2 rounded-xl">
+                          <div className="grid grid-cols-2 gap-2 pb-2">
+                            {timeSlots.map((slot) => (
+                              <button
+                                key={slot}
+                                type="button"
+                                onClick={() => setSelectedTime(slot)}
+                                className={`w-full h-10 text-sm font-medium rounded-xl border flex items-center justify-center cursor-pointer transition-colors ${selectedTime === slot ? "bg-primary text-primary-foreground border-primary shadow-md" : "bg-background border-border hover:bg-muted text-foreground"}`}
+                              >
+                                {format(
+                                  parse(slot, "HH:mm", new Date()),
+                                  "h:mm a",
+                                )}
+                              </button>
+                            ))}
                           </div>
                         </div>
-                        <form
-                          action={async (formData) => {
-                            if (isSubmitting) return;
-                            setIsSubmitting(true);
-                            formData.append("student_id", studentId);
-                            formData.append("group_class_id", group.id);
-                            formData.append("class_date", group.class_date);
-                            formData.append(
-                              "duration",
-                              group.duration.toString(),
-                            );
-                            formData.append("title", group.title);
-                            const result = await joinGroupClassAction(formData);
-                            setIsSubmitting(false);
-                            if (result?.error)
-                              setAlertState({
-                                isOpen: true,
-                                status: "error",
-                                title: "Enrollment Failed",
-                                message: result.error,
-                              });
-                            else {
-                              setOpen(false);
-                              setAlertState({
-                                isOpen: true,
-                                status: "success",
-                                title: "Successfully Enrolled!",
-                                message: `Joined ${group.title}.`,
-                              });
-                            }
-                          }}
-                        >
-                          <Button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-6 shadow-md cursor-pointer"
-                          >
-                            {isSubmitting ? "Joining..." : "Join Class"}
-                          </Button>
-                        </form>
                       </div>
-                    );
-                  })}
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
-                  <Users
-                    size={32}
-                    className="text-slate-300 dark:text-slate-600 mb-2"
-                  />
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    No group classes are currently scheduled.
-                  </p>
+                <div className="flex gap-3 pt-4 border-t border-border mt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setLessonType(null)}
+                    className="h-12 px-6 rounded-xl border-border hover:bg-muted cursor-pointer text-foreground"
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting || !selectedDate || !selectedTime}
+                    className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground h-12 text-lg rounded-xl shadow-md cursor-pointer"
+                  >
+                    {isSubmitting ? "Sending..." : "Request Schedule"}
+                  </Button>
                 </div>
-              )}
-              <div className="w-full pt-4 mt-2 border-t border-slate-100 dark:border-slate-800 flex justify-start">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setLessonType(null)}
-                  className="h-11 px-6 rounded-xl text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
-                >
-                  Back
-                </Button>
+              </form>
+            )}
+
+            {lessonType === "group" && (
+              <div className="flex flex-col py-4 space-y-4">
+                <h3 className="text-lg font-bold mb-2 text-foreground">
+                  Available Classes
+                </h3>
+                {isLoadingGroups ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin"></div>
+                    <p className="text-sm text-muted-foreground mt-4 font-medium">
+                      Fetching schedule...
+                    </p>
+                  </div>
+                ) : availableGroups.length > 0 ? (
+                  <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2">
+                    {availableGroups.map((group) => {
+                      const d = new Date(group.class_date);
+                      return (
+                        <div
+                          key={group.id}
+                          className="p-4 border border-border rounded-xl bg-background shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-primary transition-colors"
+                        >
+                          <div>
+                            <h4 className="font-bold text-foreground">
+                              {group.title}
+                            </h4>
+                            <div className="flex items-center gap-3 mt-1.5 text-xs font-medium text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <CalendarPlus size={12} />{" "}
+                                {d.toLocaleDateString(undefined, {
+                                  weekday: "short",
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock size={12} />{" "}
+                                {d.toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Timer size={12} /> {group.duration}m
+                              </span>
+                            </div>
+                          </div>
+                          <form
+                            action={async (formData) => {
+                              if (isSubmitting) return;
+                              setIsSubmitting(true);
+                              try {
+                                formData.append("student_id", studentId);
+                                formData.append("group_class_id", group.id);
+                                formData.append("class_date", group.class_date);
+                                formData.append(
+                                  "duration",
+                                  group.duration.toString(),
+                                );
+                                formData.append("title", group.title);
+                                const result =
+                                  await joinGroupClassAction(formData);
+                                if (result?.error)
+                                  setAlertState({
+                                    isOpen: true,
+                                    status: "error",
+                                    title: "Enrollment Failed",
+                                    message: result.error,
+                                  });
+                                else
+                                  setAlertState({
+                                    isOpen: true,
+                                    status: "success",
+                                    title: "Successfully Enrolled!",
+                                    message: `Joined ${group.title}.`,
+                                  });
+                              } finally {
+                                setIsSubmitting(false);
+                              }
+                            }}
+                          >
+                            <Button
+                              type="submit"
+                              disabled={isSubmitting}
+                              className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg px-6 shadow-md cursor-pointer"
+                            >
+                              {isSubmitting ? "Joining..." : "Join Class"}
+                            </Button>
+                          </form>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 bg-muted/50 rounded-xl border border-dashed border-border">
+                    <Users
+                      size={32}
+                      className="text-muted-foreground/50 mb-2"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      No group classes are currently scheduled.
+                    </p>
+                  </div>
+                )}
+                <div className="w-full pt-4 mt-2 border-t border-border flex justify-start">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setLessonType(null)}
+                    className="h-11 px-6 rounded-xl border-border hover:bg-muted cursor-pointer text-foreground"
+                  >
+                    Back
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+            )}
+          </DialogContent>
+        </Dialog>
+        <StatusAlert {...alertState} onClose={closeAlert} />
+      </>
     );
   }
 

@@ -35,19 +35,18 @@ const formSchema = z.object({
     .min(6, { message: "Password must be at least 6 characters." }),
 });
 
-export default function AuthSheet() {
+export default function AuthSheet({
+  onOpenDialog,
+}: {
+  onOpenDialog?: () => void;
+}) {
   const [isLogin, setIsLogin] = React.useState(true);
   const [isOpen, setIsOpen] = React.useState(false);
   const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      phone: "",
-      password: "",
-    },
+    defaultValues: { name: "", email: "", phone: "", password: "" },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -56,32 +55,38 @@ export default function AuthSheet() {
         await registerParent(values);
         setIsOpen(false);
         router.push("/dashboard");
-        console.log("Success! Your parent portal is created.");
       } else {
         await loginParent(values);
         setIsOpen(false);
         router.push("/dashboard");
-        console.log("Welcome back! You are securely logged in.");
       }
     } catch (error: any) {
       alert(error.message || "Something went wrong.");
     }
   }
 
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (open && onOpenDialog) {
+      onOpenDialog(); // Closes the mobile menu automatically when the modal pops up
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      {/* FIXED: Removed asChild and mapped the Button styles directly to the Trigger */}
       <DialogTrigger
-        className={`${buttonVariants({ variant: "default" })} transition-all duration-200 active:scale-95 hover:shadow-md`}
+        className={`${buttonVariants({ variant: "default" })} w-full md:w-auto h-14 md:h-10 text-lg md:text-sm px-8 md:px-5 cursor-pointer font-bold tracking-wide shadow-md`}
       >
-        Sign In / Register
+        Client Portal
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-[425px] p-6">
+      <DialogContent className="theme-dashboard sm:max-w-[425px] p-6 bg-background border-border text-foreground z-[100]">
         <DialogHeader className="mb-4 text-center">
           <DialogTitle className="text-2xl font-bold">
             {isLogin ? "Welcome Back" : "Create Account"}
           </DialogTitle>
-          <DialogDescription className="text-base text-slate-500">
+          <DialogDescription className="text-base text-muted-foreground">
             {isLogin
               ? "Sign in to manage your student's schedule."
               : "Register for a parent portal to book classes."}
@@ -99,7 +104,11 @@ export default function AuthSheet() {
                     <FormItem>
                       <FormLabel>Your Full Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Jane Doe" {...field} />
+                        <Input
+                          placeholder="Jane Doe"
+                          className="bg-background border-input"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -112,7 +121,11 @@ export default function AuthSheet() {
                     <FormItem>
                       <FormLabel>Phone Number</FormLabel>
                       <FormControl>
-                        <Input placeholder="(902) 555-0123" {...field} />
+                        <Input
+                          placeholder="(902) 555-0123"
+                          className="bg-background border-input"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -120,7 +133,6 @@ export default function AuthSheet() {
                 />
               </>
             )}
-
             <FormField
               control={form.control}
               name="email"
@@ -128,13 +140,16 @@ export default function AuthSheet() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="name@example.com" {...field} />
+                    <Input
+                      placeholder="name@example.com"
+                      className="bg-background border-input"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="password"
@@ -142,32 +157,33 @@ export default function AuthSheet() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
+                    <Input
+                      type="password"
+                      placeholder="••••••••"
+                      className="bg-background border-input"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
-            {/* FIXED: Wrapped the Button in a flex container to center it */}
             <div className="w-full flex justify-center mt-6">
               <Button
                 type="submit"
-                className="w-full sm:w-auto h-12 px-8 text-base transition-all duration-200 active:scale-95"
+                className="w-full sm:w-auto h-12 px-8 text-base transition-all duration-200 active:scale-95 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
               >
                 {isLogin ? "Sign In" : "Register"}
               </Button>
             </div>
           </form>
         </Form>
-
-        <div className="mt-4 pt-4 border-t text-center text-sm text-slate-600">
+        <div className="mt-4 pt-4 border-t border-border text-center text-sm text-muted-foreground">
           {isLogin ? "Don't have an account? " : "Already have an account? "}
           <button
             type="button"
             onClick={() => setIsLogin(!isLogin)}
-            // FIXED: Added the missing space before active:text-indigo-950
-            className="sm:w-auto ml-1 font-semibold text-indigo-600 cursor-pointer transition-all duration-200 hover:text-indigo-800 hover:underline hover:underline-offset-2 active:text-indigo-950 active:scale-95"
+            className="sm:w-auto ml-1 font-semibold text-primary cursor-pointer transition-all duration-200 hover:text-primary/80 hover:underline hover:underline-offset-2 active:scale-95"
           >
             {isLogin ? "Register here." : "Sign in."}
           </button>
