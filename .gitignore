@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local AI Agent Context
+PROJECT_CONTEXT.md
+
+# Supabase Auto-Generated Types & Config
+database.types.ts
+supabase/
