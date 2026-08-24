@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 export async function createLessonAction(prevState: any, formData: FormData) {
   const supabase = await createClient();
   const studentId = formData.get("student_id") as string;
+  const homeworkText = (formData.get("homework") as string)?.trim();
 
   const { error } = await supabase.from("lessons").insert({
     student_id: studentId,
@@ -17,7 +18,20 @@ export async function createLessonAction(prevState: any, formData: FormData) {
 
   if (error) return { error: "Failed to log lesson." };
 
+  if (homeworkText) {
+    const { error: homeworkError } = await supabase
+      .from("students")
+      .update({
+        pending_homework: homeworkText,
+        homework_notified: false,
+      })
+      .eq("id", studentId);
+
+    if (homeworkError) return { error: "Failed to save homework assignment." };
+  }
+
   revalidatePath(`/dashboard/student/${studentId}`);
+  revalidatePath("/dashboard");
   return null;
 }
 
@@ -103,16 +117,14 @@ export async function scheduleLessonAction(formData: FormData) {
   let nextColorId =
     lastLesson?.color_id !== null ? (Number(lastLesson?.color_id) + 1) % 10 : 0;
 
-  const { error } = await supabase
-    .from("lessons")
-    .insert({
-      student_id: studentId,
-      lesson_date: utcTimestamp,
-      duration: duration,
-      color_id: nextColorId,
-      status: "pending",
-      topic: "Art Lesson",
-    });
+  const { error } = await supabase.from("lessons").insert({
+    student_id: studentId,
+    lesson_date: utcTimestamp,
+    duration: duration,
+    color_id: nextColorId,
+    status: "pending",
+    topic: "Art Lesson",
+  });
   if (error) return { error: "Failed to schedule lesson. Please try again." };
 
   revalidatePath("/", "layout");
@@ -191,29 +203,25 @@ export async function updateLessonTimeAction(formData: FormData) {
       .from("lessons")
       .update({ lesson_date: isoString, duration, status: "scheduled" })
       .eq("id", lessonId);
-    await supabase
-      .from("lessons")
-      .insert({
-        student_id: studentId,
-        lesson_date: isoString,
-        duration: 0,
-        status: "notif_admin_rescheduled",
-        topic: "Notification",
-      });
+    await supabase.from("lessons").insert({
+      student_id: studentId,
+      lesson_date: isoString,
+      duration: 0,
+      status: "notif_admin_rescheduled",
+      topic: "Notification",
+    });
   } else {
     await supabase
       .from("lessons")
       .update({ lesson_date: isoString, duration, status: "pending" })
       .eq("id", lessonId);
-    await supabase
-      .from("lessons")
-      .insert({
-        student_id: studentId,
-        lesson_date: isoString,
-        duration: 0,
-        status: "notif_parent_rescheduled",
-        topic: "Notification",
-      });
+    await supabase.from("lessons").insert({
+      student_id: studentId,
+      lesson_date: isoString,
+      duration: 0,
+      status: "notif_parent_rescheduled",
+      topic: "Notification",
+    });
   }
 
   revalidatePath("/", "layout");
@@ -271,16 +279,14 @@ export async function joinGroupClassAction(formData: FormData) {
       };
   }
 
-  const { error } = await supabase
-    .from("lessons")
-    .insert({
-      student_id: studentId,
-      group_class_id: groupId,
-      lesson_date: classDate,
-      duration,
-      status: "scheduled",
-      topic: title,
-    });
+  const { error } = await supabase.from("lessons").insert({
+    student_id: studentId,
+    group_class_id: groupId,
+    lesson_date: classDate,
+    duration,
+    status: "scheduled",
+    topic: title,
+  });
   if (error) return { error: "Failed to join class. Please try again." };
 
   revalidatePath("/", "layout");

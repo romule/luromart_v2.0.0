@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { User, Users, Clock, Trash2 } from "lucide-react";
+import { User, Users, Clock, Trash2, BookOpen } from "lucide-react";
 import AddStudentDialog from "@/components/AddStudentDialog";
 import StudentCard from "@/components/StudentCard";
 import LessonDialog from "@/components/LessonDialog";
@@ -19,6 +19,7 @@ export default function ParentTabs({
 
   const tabs = [
     { id: "children", label: "My Children", icon: <User size={18} /> },
+    { id: "homework", label: "Homework", icon: <BookOpen size={18} /> },
     { id: "individual", label: "1-on-1 Classes", icon: <Clock size={18} /> },
     { id: "groups", label: "Group Classes", icon: <Users size={18} /> },
     { id: "trash", label: "Trash Can", icon: <Trash2 size={18} /> },
@@ -67,6 +68,43 @@ export default function ParentTabs({
                 <p className="text-sm text-muted-foreground italic p-6 bg-muted/50 rounded-xl border border-dashed border-border text-center">
                   No children registered yet. Add a student to begin booking
                   classes!
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "homework" && (
+          <div className="flex flex-col gap-6 animate-in fade-in duration-300">
+            <div className="flex items-center justify-between pb-2 border-b border-border">
+              <div className="flex items-center gap-2">
+                <BookOpen size={20} className="text-primary" />
+                <h2 className="font-bold text-lg text-foreground">
+                  Current Assignments
+                </h2>
+              </div>
+            </div>
+            <div className="flex flex-col gap-4 max-h-[600px] overflow-y-auto pr-2">
+              {activeStudents.filter((s: any) => s.pending_homework).length >
+              0 ? (
+                activeStudents
+                  .filter((s: any) => s.pending_homework)
+                  .map((student: any) => (
+                    <div
+                      key={student.id}
+                      className="p-5 bg-muted/30 border border-border rounded-xl"
+                    >
+                      <h3 className="font-bold text-foreground">
+                        {student.name} {student.surname}
+                      </h3>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed mt-2">
+                        {student.pending_homework}
+                      </p>
+                    </div>
+                  ))
+              ) : (
+                <p className="text-sm text-muted-foreground italic p-6 bg-muted/50 rounded-xl border border-dashed border-border text-center">
+                  No homework assigned right now.
                 </p>
               )}
             </div>

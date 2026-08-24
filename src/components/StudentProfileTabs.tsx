@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Clock, FileText, BookOpen } from "lucide-react";
+import { Clock, FileText, BookOpen, Settings } from "lucide-react";
 import LessonDialog from "@/components/LessonDialog";
+import StudentSettingsForm from "./StudentSettingsForm";
 
 export default function StudentProfileTabs({
   history,
   upcoming,
   student,
+  isAdmin,
 }: any) {
   const [activeTab, setActiveTab] = useState("upcoming");
 
@@ -15,6 +17,7 @@ export default function StudentProfileTabs({
     { id: "upcoming", label: "Upcoming Classes", icon: <Clock size={18} /> },
     { id: "homework", label: "Homework & Notes", icon: <BookOpen size={18} /> },
     { id: "history", label: "Past Lessons", icon: <FileText size={18} /> },
+    { id: "settings", label: "Profile Settings", icon: <Settings size={18} /> },
   ];
 
   return (
@@ -150,6 +153,18 @@ export default function StudentProfileTabs({
                 </p>
               )}
             </div>
+          </div>
+        )}
+
+        {activeTab === "settings" && (
+          <div className="flex flex-col gap-6 animate-in fade-in duration-300">
+            <div className="flex items-center gap-2 pb-4 border-b border-border">
+              <Settings size={20} className="text-primary" />
+              <h2 className="font-bold text-xl text-foreground">
+                Edit Profile & Level
+              </h2>
+            </div>
+            <StudentSettingsForm student={student} isAdmin={isAdmin} />
           </div>
         )}
       </div>

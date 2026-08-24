@@ -7,7 +7,6 @@ import {
   Trash2,
   AlertCircle,
   Loader2,
-  Settings,
   FileText,
   CheckCircle,
   BookOpen,
@@ -15,7 +14,6 @@ import {
 import { softDeleteStudentAction } from "@/actions/students";
 import { dismissHomeworkNotifAction } from "@/actions/lessons";
 import LessonDialog from "@/components/LessonDialog";
-import StudentSettingsForm from "@/components/StudentSettingsForm";
 import {
   Dialog,
   DialogContent,
@@ -32,7 +30,7 @@ export default function StudentCard({ student }: { student: any }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [isHomeworkOpen, setIsHomeworkOpen] = useState(false);
-  const [isClearingHomework, setIsClearingHomework] = useState(false);
+  const [isDismissingHomework, setIsDismissingHomework] = useState(false);
 
   const confirmDelete = async () => {
     setIsDeleting(true);
@@ -42,12 +40,12 @@ export default function StudentCard({ student }: { student: any }) {
     router.refresh();
   };
 
-  const clearHomework = async () => {
-    setIsClearingHomework(true);
+  const dismissHomework = async () => {
+    setIsDismissingHomework(true);
     const formData = new FormData();
     formData.append("student_id", student.id);
     await dismissHomeworkNotifAction(formData);
-    setIsClearingHomework(false);
+    setIsDismissingHomework(false);
     setIsHomeworkOpen(false);
     router.refresh();
   };
@@ -86,24 +84,6 @@ export default function StudentCard({ student }: { student: any }) {
             <Loader2 size={24} className="animate-spin text-primary" />
           </div>
         )}
-
-        <div className="absolute top-4 right-4 z-10">
-          <Dialog>
-            <DialogTrigger className="p-2 text-muted-foreground hover:text-primary bg-background border border-border hover:bg-muted rounded-full transition-all cursor-pointer shadow-sm">
-              <Settings size={18} />
-            </DialogTrigger>
-            <DialogContent className="theme-dashboard sm:max-w-xl bg-background border-border p-0 overflow-hidden">
-              <DialogHeader className="p-6 pb-2">
-                <DialogTitle className="text-2xl font-bold text-foreground">
-                  Edit Profile
-                </DialogTitle>
-              </DialogHeader>
-              <div className="px-6 pb-6">
-                <StudentSettingsForm student={student} isAdmin={false} />
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
 
         <div className="w-full xl:w-auto pr-12">
           <h3 className="font-bold text-xl text-foreground">
@@ -164,18 +144,22 @@ export default function StudentCard({ student }: { student: any }) {
               {student.pending_homework}
             </p>
           </div>
-          <div className="flex justify-end mt-4">
+          <p className="text-xs text-muted-foreground italic mt-4 text-center">
+            This assignment will remain in your Homework tab until reviewed by
+            the teacher.
+          </p>
+          <div className="flex justify-end mt-2">
             <Button
               className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer"
-              onClick={clearHomework}
-              disabled={isClearingHomework}
+              onClick={dismissHomework}
+              disabled={isDismissingHomework}
             >
-              {isClearingHomework ? (
+              {isDismissingHomework ? (
                 <Loader2 className="animate-spin mr-2" size={16} />
               ) : (
                 <CheckCircle className="mr-2" size={16} />
               )}{" "}
-              Got it!
+              Mark as Read
             </Button>
           </div>
         </DialogContent>

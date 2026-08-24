@@ -104,8 +104,7 @@ export default function AdminStudentsDirectory({
               student.lessons
                 ?.filter((l: any) => l.status === "completed")
                 .reverse() || [];
-            const hasHomework =
-              student.pending_homework && !student.homework_notified;
+            const hasHomework = !!student.pending_homework;
 
             return (
               <div
@@ -165,6 +164,7 @@ function HomeworkDialog({
 }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
   const [open, setOpen] = useState(false);
   const [alert, setAlert] = useState({
     isOpen: false,
@@ -177,6 +177,31 @@ function HomeworkDialog({
     setAlert((prev) => ({ ...prev, isOpen: false }));
     setOpen(false);
     router.refresh();
+  };
+
+  const handleClearHomework = async () => {
+    setIsClearing(true);
+    const formData = new FormData();
+    formData.append("student_id", student.id);
+    formData.append("homework", ""); // Empty string signals a clear
+    const result = await assignHomeworkAction(formData);
+    setIsClearing(false);
+
+    if (result?.error) {
+      setAlert({
+        isOpen: true,
+        status: "error",
+        title: "Failed",
+        message: result.error,
+      });
+    } else {
+      setAlert({
+        isOpen: true,
+        status: "success",
+        title: "Cleared!",
+        message: "The student's assignment has been cleared.",
+      });
+    }
   };
 
   return (
@@ -193,8 +218,7 @@ function HomeworkDialog({
           </DialogHeader>
 
           <div className="mt-2 space-y-6">
-            {/* ADMIN NOW SEES THE CURRENTLY ASSIGNED HOMEWORK */}
-            <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-xl shadow-sm">
+            <div className="relative bg-amber-500/10 border border-amber-500/30 p-4 rounded-xl shadow-sm">
               <h3 className="font-bold text-amber-700 dark:text-amber-400 mb-2 flex items-center gap-2">
                 <BookOpen size={16} /> Currently Assigned
               </h3>
@@ -206,6 +230,21 @@ function HomeworkDialog({
                 <p className="text-sm text-amber-700/70 dark:text-amber-400/70 italic font-medium">
                   No homework currently assigned.
                 </p>
+              )}
+              {student.pending_homework && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearHomework}
+                  disabled={isClearing || isSubmitting}
+                  className="absolute top-2 right-2 h-8 px-3 text-amber-800 dark:text-amber-300 hover:bg-amber-500/20 hover:text-amber-900 dark:hover:text-amber-200"
+                >
+                  {isClearing ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    "Clear"
+                  )}
+                </Button>
               )}
             </div>
 
