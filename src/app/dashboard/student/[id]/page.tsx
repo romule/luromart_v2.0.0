@@ -6,16 +6,22 @@ import StudentProfileTabs from "@/components/StudentProfileTabs";
 
 export default async function StudentProfilePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
   if (!user) redirect("/");
 
   const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
+  const initialTab = resolvedSearchParams?.tab || "upcoming";
+
   const isAdmin = user.email === process.env.ADMIN_EMAIL;
 
   const { data: student } = await supabase
@@ -42,8 +48,9 @@ export default async function StudentProfilePage({
   const history = lessons.filter((l: any) => {
     if (
       l.status === "declined" ||
-      l.status.includes("canceled") ||
-      l.status.startsWith("notif_")
+      l.status?.includes("canceled") ||
+      l.status?.startsWith("notif_") ||
+      l.status === "pending_homework"
     )
       return false;
     if (l.status === "completed") return true;
@@ -52,12 +59,17 @@ export default async function StudentProfilePage({
     return lessonEndMs < nowMs;
   });
 
+  const activeHomeworks = lessons.filter(
+    (l: any) => l.status === "pending_homework",
+  );
+
   const upcomingAll = lessons.filter((l: any) => {
     if (
       l.status === "completed" ||
       l.status === "declined" ||
-      l.status.includes("canceled") ||
-      l.status.startsWith("notif_")
+      l.status?.includes("canceled") ||
+      l.status?.startsWith("notif_") ||
+      l.status === "pending_homework"
     )
       return false;
     const lessonEndMs =
@@ -79,7 +91,7 @@ export default async function StudentProfilePage({
             {student.name}'s History
           </h1>
           <p className="text-muted-foreground mt-1">
-            Review past lessons and upcoming schedule.
+            Review past lessons, homework assignments, and upcoming schedule.
           </p>
         </div>
       </div>
@@ -87,7 +99,10 @@ export default async function StudentProfilePage({
       <StudentProfileTabs
         history={history}
         upcoming={upcomingAll}
+        activeHomeworks={activeHomeworks}
         student={student}
+        isAdmin={isAdmin}
+        initialTab={initialTab}
       />
     </div>
   );

@@ -8,30 +8,38 @@ export async function createLessonAction(prevState: any, formData: FormData) {
   const studentId = formData.get("student_id") as string;
   const homeworkText = (formData.get("homework") as string)?.trim();
 
+  // 1. Log the actual lesson
   const { error } = await supabase.from("lessons").insert({
     student_id: studentId,
-    topic: formData.get("topic"),
-    teacher_notes: formData.get("notes"),
+    topic: formData.get("topic") as string,
+    teacher_notes: formData.get("notes") as string,
     lesson_date: new Date().toISOString(),
     status: "completed",
+    lesson_type: "individual",
   });
 
   if (error) return { error: "Failed to log lesson." };
 
+  // 2. If homework was typed in, create a dedicated Homework record!
   if (homeworkText) {
-    const { error: homeworkError } = await supabase
-      .from("students")
-      .update({
-        pending_homework: homeworkText,
-        homework_notified: false,
-      })
-      .eq("id", studentId);
+    const { error: hwError } = await supabase.from("lessons").insert({
+      student_id: studentId,
+      topic: "Practice Assignment",
+      teacher_notes: homeworkText,
+      lesson_date: new Date().toISOString(),
+      status: "pending_homework",
+      lesson_type: "homework",
+    });
 
-    if (homeworkError) return { error: "Failed to save homework assignment." };
+    if (!hwError) {
+      await supabase
+        .from("students")
+        .update({ homework_notified: false })
+        .eq("id", studentId);
+    }
   }
 
-  revalidatePath(`/dashboard/student/${studentId}`);
-  revalidatePath("/dashboard");
+  revalidatePath("/", "layout");
   return null;
 }
 
@@ -40,17 +48,63 @@ export async function assignHomeworkAction(formData: FormData) {
   const studentId = formData.get("student_id") as string;
   const homeworkText = formData.get("homework") as string;
 
-  if (!homeworkText) return { error: "Homework text is required." };
+  if (!homeworkText?.trim()) return { error: "Homework text is required." };
 
-  const { error } = await supabase
+  // Create a new active assignment row in the database
+  const { error } = await supabase.from("lessons").insert({
+    student_id: studentId,
+    topic: "Practice Assignment",
+    teacher_notes: homeworkText.trim(),
+    lesson_date: new Date().toISOString(),
+    status: "pending_homework",
+    lesson_type: "homework",
+  });
+
+  if (error) return { error: error.message };
+
+  // Trigger the notification dot for the parent
+  await supabase
     .from("students")
-    .update({
-      pending_homework: homeworkText,
-      homework_notified: false,
-    })
+    .update({ homework_notified: false })
     .eq("id", studentId);
 
-  if (error) return { error: "Failed to assign homework." };
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
+export async function completeHomeworkAction(formData: FormData) {
+  const supabase = await createClient();
+  const lessonId = formData.get("lesson_id") as string;
+  const studentId = formData.get("student_id") as string;
+
+  // Mark the specific assignment as completed so it drops into history
+  const { error } = await supabase
+    .from("lessons")
+    .update({
+      status: "completed",
+      topic: "Completed Practice Assignment",
+    })
+    .eq("id", lessonId);
+
+  if (error) return { error: error.message };
+
+  // Clear the notification dot
+  await supabase
+    .from("students")
+    .update({ homework_notified: true })
+    .eq("id", studentId);
+
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
+export async function deleteHomeworkAction(formData: FormData) {
+  const supabase = await createClient();
+  const lessonId = formData.get("lesson_id") as string;
+
+  const { error } = await supabase.from("lessons").delete().eq("id", lessonId);
+
+  if (error) return { error: error.message };
 
   revalidatePath("/", "layout");
   return { success: true };
@@ -59,9 +113,11 @@ export async function assignHomeworkAction(formData: FormData) {
 export async function dismissHomeworkNotifAction(formData: FormData) {
   const studentId = formData.get("student_id") as string;
   const supabase = await createClient();
+
+  // Simply turn off the notification dot
   await supabase
     .from("students")
-    .update({ homework_notified: true, pending_homework: null })
+    .update({ homework_notified: true })
     .eq("id", studentId);
 
   revalidatePath("/", "layout");
@@ -81,6 +137,7 @@ export async function scheduleLessonAction(formData: FormData) {
     .from("lessons")
     .select("id, lesson_date, duration")
     .in("status", ["scheduled", "pending"]);
+
   const { data: groupClasses } = await supabase
     .from("group_classes")
     .select("id, class_date, duration");
@@ -114,6 +171,7 @@ export async function scheduleLessonAction(formData: FormData) {
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+
   let nextColorId =
     lastLesson?.color_id !== null ? (Number(lastLesson?.color_id) + 1) % 10 : 0;
 
@@ -125,6 +183,7 @@ export async function scheduleLessonAction(formData: FormData) {
     status: "pending",
     topic: "Art Lesson",
   });
+
   if (error) return { error: "Failed to schedule lesson. Please try again." };
 
   revalidatePath("/", "layout");
@@ -139,7 +198,6 @@ export async function cancelLessonAction(formData: FormData) {
     .update({ status: "canceled" })
     .eq("id", lessonId);
   if (error) return { error: "Failed to cancel lesson" };
-
   revalidatePath("/", "layout");
   return { success: true };
 }
@@ -172,6 +230,7 @@ export async function updateLessonTimeAction(formData: FormData) {
     .select("id, lesson_date, duration")
     .in("status", ["scheduled", "pending"])
     .neq("id", lessonId);
+
   const { data: groupClasses } = await supabase
     .from("group_classes")
     .select("id, class_date, duration");
@@ -203,25 +262,29 @@ export async function updateLessonTimeAction(formData: FormData) {
       .from("lessons")
       .update({ lesson_date: isoString, duration, status: "scheduled" })
       .eq("id", lessonId);
-    await supabase.from("lessons").insert({
-      student_id: studentId,
-      lesson_date: isoString,
-      duration: 0,
-      status: "notif_admin_rescheduled",
-      topic: "Notification",
-    });
+    await supabase
+      .from("lessons")
+      .insert({
+        student_id: studentId,
+        lesson_date: isoString,
+        duration: 0,
+        status: "notif_admin_rescheduled",
+        topic: "Notification",
+      });
   } else {
     await supabase
       .from("lessons")
       .update({ lesson_date: isoString, duration, status: "pending" })
       .eq("id", lessonId);
-    await supabase.from("lessons").insert({
-      student_id: studentId,
-      lesson_date: isoString,
-      duration: 0,
-      status: "notif_parent_rescheduled",
-      topic: "Notification",
-    });
+    await supabase
+      .from("lessons")
+      .insert({
+        student_id: studentId,
+        lesson_date: isoString,
+        duration: 0,
+        status: "notif_parent_rescheduled",
+        topic: "Notification",
+      });
   }
 
   revalidatePath("/", "layout");
@@ -279,14 +342,16 @@ export async function joinGroupClassAction(formData: FormData) {
       };
   }
 
-  const { error } = await supabase.from("lessons").insert({
-    student_id: studentId,
-    group_class_id: groupId,
-    lesson_date: classDate,
-    duration,
-    status: "scheduled",
-    topic: title,
-  });
+  const { error } = await supabase
+    .from("lessons")
+    .insert({
+      student_id: studentId,
+      group_class_id: groupId,
+      lesson_date: classDate,
+      duration,
+      status: "scheduled",
+      topic: title,
+    });
   if (error) return { error: "Failed to join class. Please try again." };
 
   revalidatePath("/", "layout");
@@ -296,9 +361,7 @@ export async function joinGroupClassAction(formData: FormData) {
 export async function dismissNotificationAction(formData: FormData) {
   const supabase = await createClient();
   const lessonId = formData.get("lesson_id") as string;
-
   await supabase.from("lessons").delete().eq("id", lessonId);
-
   revalidatePath("/", "layout");
   return { success: true };
 }
