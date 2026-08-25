@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { User, Users, Clock, Trash2 } from "lucide-react";
+import { User, Users, Clock, Trash2, BookOpen } from "lucide-react";
 import AddStudentDialog from "@/components/AddStudentDialog";
 import StudentCard from "@/components/StudentCard";
 import LessonDialog from "@/components/LessonDialog";
@@ -17,8 +17,14 @@ export default function ParentTabs({
 }: any) {
   const [activeTab, setActiveTab] = useState("children");
 
+  // Checks if ANY child has at least one active assignment
+  const hasAnyHomework = activeStudents.some((s: any) =>
+    s.lessons?.some((l: any) => l.status === "pending_homework"),
+  );
+
   const tabs = [
     { id: "children", label: "My Children", icon: <User size={18} /> },
+    { id: "homework", label: "Homework", icon: <BookOpen size={18} /> },
     { id: "individual", label: "1-on-1 Classes", icon: <Clock size={18} /> },
     { id: "groups", label: "Group Classes", icon: <Users size={18} /> },
     { id: "trash", label: "Trash Can", icon: <Trash2 size={18} /> },
@@ -34,7 +40,11 @@ export default function ParentTabs({
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all whitespace-nowrap cursor-pointer ${activeTab === tab.id ? "bg-primary/10 text-primary shadow-sm" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === tab.id
+                ? "bg-primary/10 text-primary shadow-sm"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
           >
             {tab.icon} {tab.label}
           </button>
@@ -73,6 +83,55 @@ export default function ParentTabs({
           </div>
         )}
 
+        {activeTab === "homework" && (
+          <div className="flex flex-col gap-6 animate-in fade-in duration-300">
+            <div className="flex items-center justify-between pb-2 border-b border-border">
+              <div className="flex items-center gap-2">
+                <BookOpen size={20} className="text-primary" />
+                <h2 className="font-bold text-lg text-foreground">
+                  Current Assignments
+                </h2>
+              </div>
+            </div>
+            <div className="flex flex-col gap-4 max-h-[600px] overflow-y-auto pr-2">
+              {hasAnyHomework ? (
+                activeStudents.map((student: any) => {
+                  const pendingHomeworks =
+                    student.lessons?.filter(
+                      (l: any) => l.status === "pending_homework",
+                    ) || [];
+                  if (pendingHomeworks.length === 0) return null;
+
+                  return pendingHomeworks.map((hw: any) => (
+                    <div
+                      key={hw.id}
+                      className="p-5 bg-amber-500/10 border border-amber-500/30 rounded-2xl shadow-sm flex flex-col"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-bold text-amber-800 dark:text-amber-400 flex items-center gap-2">
+                          <BookOpen size={16} /> {student.name}{" "}
+                          {student.surname}
+                        </h3>
+                        <span className="text-xs font-bold text-amber-700 dark:text-amber-500 bg-amber-500/20 px-2.5 py-1 rounded-md">
+                          Assigned:{" "}
+                          {new Date(hw.lesson_date).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed bg-background/50 p-4 rounded-xl border border-border">
+                        {hw.teacher_notes}
+                      </p>
+                    </div>
+                  ));
+                })
+              ) : (
+                <p className="text-sm text-muted-foreground italic p-6 bg-muted/50 rounded-xl border border-dashed border-border text-center">
+                  No homework assigned right now. You are all caught up!
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         {activeTab === "individual" && (
           <div className="flex flex-col gap-6 animate-in fade-in duration-300">
             <div className="flex items-center justify-between pb-2 border-b border-border">
@@ -82,9 +141,6 @@ export default function ParentTabs({
                   Pending & Scheduled
                 </h2>
               </div>
-              <span className="bg-muted text-muted-foreground text-xs font-bold px-2 py-1 rounded-md">
-                {upcomingIndividual.length}
-              </span>
             </div>
             <div
               className="flex flex-col gap-4 max-h-[600px] overflow-y-auto pr-2 [&::-webkit-scrollbar]:hidden"
@@ -118,9 +174,6 @@ export default function ParentTabs({
                   Enrolled Groups
                 </h2>
               </div>
-              <span className="bg-muted text-muted-foreground text-xs font-bold px-2 py-1 rounded-md">
-                {upcomingGroup.length}
-              </span>
             </div>
             <div
               className="flex flex-col gap-4 max-h-[600px] overflow-y-auto pr-2 [&::-webkit-scrollbar]:hidden"
@@ -152,9 +205,6 @@ export default function ParentTabs({
                 <Trash2 size={20} className="text-destructive" />
                 <h2 className="font-bold text-lg text-foreground">Trash Can</h2>
               </div>
-              <span className="bg-destructive/10 text-destructive text-xs font-bold px-2 py-1 rounded-md">
-                {deletedStudents?.length || 0}
-              </span>
             </div>
             <div className="flex flex-col gap-4 max-h-[600px] overflow-y-auto pr-2">
               {deletedStudents?.length > 0 ? (

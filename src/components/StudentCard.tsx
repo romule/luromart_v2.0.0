@@ -7,15 +7,13 @@ import {
   Trash2,
   AlertCircle,
   Loader2,
-  Settings,
   FileText,
-  CheckCircle,
   BookOpen,
+  Sparkles,
+  ArrowRight,
 } from "lucide-react";
 import { softDeleteStudentAction } from "@/actions/students";
-import { dismissHomeworkNotifAction } from "@/actions/lessons";
 import LessonDialog from "@/components/LessonDialog";
-import StudentSettingsForm from "@/components/StudentSettingsForm";
 import {
   Dialog,
   DialogContent,
@@ -32,23 +30,12 @@ export default function StudentCard({ student }: { student: any }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [isHomeworkOpen, setIsHomeworkOpen] = useState(false);
-  const [isClearingHomework, setIsClearingHomework] = useState(false);
 
   const confirmDelete = async () => {
     setIsDeleting(true);
     await softDeleteStudentAction(student.id);
     setIsAlertOpen(false);
     setIsDeleting(false);
-    router.refresh();
-  };
-
-  const clearHomework = async () => {
-    setIsClearingHomework(true);
-    const formData = new FormData();
-    formData.append("student_id", student.id);
-    await dismissHomeworkNotifAction(formData);
-    setIsClearingHomework(false);
-    setIsHomeworkOpen(false);
     router.refresh();
   };
 
@@ -76,34 +63,30 @@ export default function StudentCard({ student }: { student: any }) {
     ageString = ` • ${Math.abs(new Date(ageDiffMs).getUTCFullYear() - 1970)} yrs old`;
   }
 
-  const hasHomework = student.pending_homework && !student.homework_notified;
+  // Purely state-driven: If active homework rows exist, the warning is visible.
+  const activeHomeworks =
+    student.lessons?.filter((l: any) => l.status === "pending_homework") || [];
+  const hasHomework = activeHomeworks.length > 0;
 
   return (
     <>
-      <div className="relative flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 p-5 border border-border rounded-2xl bg-muted/20 shadow-sm transition-all duration-300">
+      <div className="relative flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 p-5 pt-12 xl:pt-5 border border-border rounded-2xl bg-muted/20 shadow-sm transition-all duration-300">
         {isNavigating && (
           <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px] z-20 flex items-center justify-center rounded-2xl">
             <Loader2 size={24} className="animate-spin text-primary" />
           </div>
         )}
 
-        <div className="absolute top-4 right-4 z-10">
-          <Dialog>
-            <DialogTrigger className="p-2 text-muted-foreground hover:text-primary bg-background border border-border hover:bg-muted rounded-full transition-all cursor-pointer shadow-sm">
-              <Settings size={18} />
-            </DialogTrigger>
-            <DialogContent className="theme-dashboard sm:max-w-xl bg-background border-border p-0 overflow-hidden">
-              <DialogHeader className="p-6 pb-2">
-                <DialogTitle className="text-2xl font-bold text-foreground">
-                  Edit Profile
-                </DialogTitle>
-              </DialogHeader>
-              <div className="px-6 pb-6">
-                <StudentSettingsForm student={student} isAdmin={false} />
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+        {/* ABSOLUTE POSITIONED HOMEWORK BADGE IN THE TOP RIGHT */}
+        {hasHomework && (
+          <button
+            onClick={() => setIsHomeworkOpen(true)}
+            className="absolute top-4 right-4 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-full text-xs font-bold transition-colors cursor-pointer shadow-sm animate-pulse"
+          >
+            <AlertCircle size={14} /> {activeHomeworks.length} Active Task
+            {activeHomeworks.length > 1 ? "s" : ""}
+          </button>
+        )}
 
         <div className="w-full xl:w-auto pr-12">
           <h3 className="font-bold text-xl text-foreground">
@@ -120,15 +103,6 @@ export default function StudentCard({ student }: { student: any }) {
         </div>
 
         <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full xl:w-auto mt-4 xl:mt-0">
-          {hasHomework && (
-            <button
-              onClick={() => setIsHomeworkOpen(true)}
-              className="flex items-center justify-center gap-2 h-11 px-5 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl text-sm font-bold transition-colors cursor-pointer shadow-sm animate-pulse"
-            >
-              <AlertCircle size={18} /> New Homework!
-            </button>
-          )}
-
           <LessonDialog
             mode="mobile-schedule"
             studentId={student.id}
@@ -152,35 +126,45 @@ export default function StudentCard({ student }: { student: any }) {
         </div>
       </div>
 
+      {/* HOMEWORK WARNING DIALOG */}
       <Dialog open={isHomeworkOpen} onOpenChange={setIsHomeworkOpen}>
         <DialogContent className="theme-dashboard sm:max-w-md p-6 z-[60] bg-background border-border text-foreground">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-400 text-xl font-bold">
-              <BookOpen size={24} /> Practice Assignment
+              <BookOpen size={24} /> Practice Assignments
             </DialogTitle>
           </DialogHeader>
-          <div className="p-4 bg-muted/30 border border-border rounded-xl mt-2">
-            <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-              {student.pending_homework}
+          <div className="p-5 bg-muted/30 border border-border rounded-xl mt-2 flex flex-col items-center justify-center gap-2 text-center">
+            <Sparkles size={32} className="text-amber-500 mb-2" />
+            <p className="text-base text-foreground font-medium">
+              {student.name} has{" "}
+              <span className="font-bold text-amber-600 dark:text-amber-400">
+                {activeHomeworks.length}
+              </span>{" "}
+              active assignment(s).
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Head over to their profile's Homework tab to view the details and
+              mark them as completed!
             </p>
           </div>
-          <div className="flex justify-end mt-4">
-            <Button
-              className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer"
-              onClick={clearHomework}
-              disabled={isClearingHomework}
+          <div className="flex justify-end mt-2">
+            {/* ADDED ?tab=homework to the URL here */}
+            <Link
+              href={`/dashboard/student/${student.id}?tab=homework`}
+              onClick={() => {
+                setIsHomeworkOpen(false);
+                setIsNavigating(true);
+              }}
+              className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer h-10 px-5 rounded-lg flex items-center justify-center font-bold"
             >
-              {isClearingHomework ? (
-                <Loader2 className="animate-spin mr-2" size={16} />
-              ) : (
-                <CheckCircle className="mr-2" size={16} />
-              )}{" "}
-              Got it!
-            </Button>
+              Go to Assignments <ArrowRight className="ml-2" size={16} />
+            </Link>
           </div>
         </DialogContent>
       </Dialog>
 
+      {/* DELETE DIALOG */}
       <Dialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <DialogContent className="theme-dashboard sm:max-w-md p-6 z-[60] bg-background border-border text-foreground">
           <DialogHeader>

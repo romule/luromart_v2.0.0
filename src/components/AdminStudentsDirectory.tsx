@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, BookOpen, Loader2 } from "lucide-react";
+import {
+  Search,
+  BookOpen,
+  Loader2,
+  Trash2,
+  CheckCircle2,
+  FileText,
+  CalendarPlus,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { assignHomeworkAction } from "@/actions/lessons";
+import { assignHomeworkAction, deleteHomeworkAction } from "@/actions/lessons";
 import StudentSettingsForm from "./StudentSettingsForm";
 import StatusAlert from "./StatusAlert";
 
@@ -63,7 +71,6 @@ export default function AdminStudentsDirectory({
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-
         <Select
           value={filterParent}
           onValueChange={(val) => val && setFilterParent(val)}
@@ -80,7 +87,6 @@ export default function AdminStudentsDirectory({
             ))}
           </SelectContent>
         </Select>
-
         <Select
           value={filterLevel}
           onValueChange={(val) => val && setFilterLevel(val)}
@@ -103,9 +109,12 @@ export default function AdminStudentsDirectory({
             const pastLessons =
               student.lessons
                 ?.filter((l: any) => l.status === "completed")
+                .slice()
                 .reverse() || [];
-            const hasHomework =
-              student.pending_homework && !student.homework_notified;
+            const activeHomeworks =
+              student.lessons?.filter(
+                (l: any) => l.status === "pending_homework",
+              ) || [];
 
             return (
               <div
@@ -122,13 +131,12 @@ export default function AdminStudentsDirectory({
                       {student.experience_level}
                     </span>
                   </p>
-                  {hasHomework && (
-                    <p className="text-xs font-bold text-amber-600 dark:text-amber-400 mt-2 bg-amber-500/10 inline-block px-2 py-1 rounded border border-amber-500/20">
-                      Pending Homework Assigned
+                  {activeHomeworks.length > 0 && (
+                    <p className="text-xs font-bold text-amber-600 dark:text-amber-400 mt-2 bg-amber-500/10 inline-block px-2.5 py-1 rounded-md border border-amber-500/20">
+                      {activeHomeworks.length} Active Assignment(s)
                     </p>
                   )}
                 </div>
-
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                   <Dialog>
                     <DialogTrigger className="flex-1 sm:flex-none px-4 py-2 bg-muted hover:bg-muted/80 text-foreground text-sm font-semibold rounded-lg transition-colors cursor-pointer border border-border">
@@ -141,7 +149,11 @@ export default function AdminStudentsDirectory({
                       <StudentSettingsForm student={student} isAdmin={true} />
                     </DialogContent>
                   </Dialog>
-                  <HomeworkDialog student={student} pastLessons={pastLessons} />
+                  <HomeworkDialog
+                    student={student}
+                    activeHomeworks={activeHomeworks}
+                    pastLessons={pastLessons}
+                  />
                 </div>
               </div>
             );
@@ -158,13 +170,17 @@ export default function AdminStudentsDirectory({
 
 function HomeworkDialog({
   student,
+  activeHomeworks,
   pastLessons,
 }: {
   student: any;
+  activeHomeworks: any[];
   pastLessons: any[];
 }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [homeworkInput, setHomeworkInput] = useState("");
   const [open, setOpen] = useState(false);
   const [alert, setAlert] = useState({
     isOpen: false,
@@ -175,7 +191,6 @@ function HomeworkDialog({
 
   const handleCloseAlert = () => {
     setAlert((prev) => ({ ...prev, isOpen: false }));
-    setOpen(false);
     router.refresh();
   };
 
@@ -188,34 +203,71 @@ function HomeworkDialog({
         <DialogContent className="theme-dashboard sm:max-w-lg bg-background border-border max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl">
-              Homework for {student.name}
+              Homework for {student.name} {student.surname || ""}
             </DialogTitle>
           </DialogHeader>
 
           <div className="mt-2 space-y-6">
-            {/* ADMIN NOW SEES THE CURRENTLY ASSIGNED HOMEWORK */}
-            <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-xl shadow-sm">
-              <h3 className="font-bold text-amber-700 dark:text-amber-400 mb-2 flex items-center gap-2">
-                <BookOpen size={16} /> Currently Assigned
+            <div className="space-y-3">
+              <h3 className="font-bold text-amber-700 dark:text-amber-400 flex items-center gap-2 border-b border-border pb-2">
+                <BookOpen size={16} /> Active Assignments
               </h3>
-              {student.pending_homework ? (
-                <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-                  {student.pending_homework}
-                </p>
-              ) : (
-                <p className="text-sm text-amber-700/70 dark:text-amber-400/70 italic font-medium">
-                  No homework currently assigned.
-                </p>
-              )}
+              <div className="max-h-[250px] overflow-y-auto pr-2 space-y-3">
+                {activeHomeworks.length > 0 ? (
+                  activeHomeworks.map((hw: any) => (
+                    <div
+                      key={hw.id}
+                      className="relative bg-amber-500/10 border border-amber-500/30 p-4 rounded-xl shadow-sm"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                          <CalendarPlus size={13} /> Assigned:{" "}
+                          {new Date(hw.lesson_date).toLocaleDateString()}
+                        </span>
+                        <form
+                          action={async (formData) => {
+                            setDeletingId(hw.id);
+                            await deleteHomeworkAction(formData);
+                            setDeletingId(null);
+                            router.refresh();
+                          }}
+                        >
+                          <input type="hidden" name="lesson_id" value={hw.id} />
+                          <Button
+                            type="submit"
+                            variant="ghost"
+                            size="sm"
+                            disabled={deletingId === hw.id}
+                            className="h-7 px-2 text-destructive hover:bg-destructive/10 text-xs font-bold"
+                          >
+                            {deletingId === hw.id ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                              <span className="flex items-center gap-1">
+                                <Trash2 size={12} /> Clear
+                              </span>
+                            )}
+                          </Button>
+                        </form>
+                      </div>
+                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed bg-background/50 p-3 rounded-lg border border-border">
+                        {hw.teacher_notes}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-amber-700/70 dark:text-amber-400/70 italic font-medium p-4 bg-amber-500/5 rounded-xl border border-dashed border-amber-500/20 text-center">
+                    No assignments currently active.
+                  </p>
+                )}
+              </div>
             </div>
 
             <form
               action={async (formData) => {
                 setIsSubmitting(true);
-                formData.append("student_id", student.id);
                 const result = await assignHomeworkAction(formData);
                 setIsSubmitting(false);
-
                 if (result?.error) {
                   setAlert({
                     isOpen: true,
@@ -224,61 +276,78 @@ function HomeworkDialog({
                     message: result.error,
                   });
                 } else {
-                  setAlert({
-                    isOpen: true,
-                    status: "success",
-                    title: "Sent!",
-                    message: "Homework assigned to student profile.",
-                  });
+                  setHomeworkInput("");
+                  router.refresh();
                 }
               }}
               className="space-y-3 p-4 bg-muted/30 border border-border rounded-xl"
             >
-              <label className="text-sm font-bold text-foreground">
+              <label className="text-sm font-bold text-foreground block">
                 Assign New Homework
               </label>
+              <input type="hidden" name="student_id" value={student.id} />
               <Textarea
                 name="homework"
+                value={homeworkInput}
+                onChange={(e) => setHomeworkInput(e.target.value)}
                 required
-                placeholder="Describe the new practice exercise here... (This will overwrite current assignment)"
+                placeholder="Describe the new practice exercise here..."
                 className="bg-background min-h-[100px]"
               />
               <Button
                 type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-primary text-primary-foreground"
+                disabled={isSubmitting || !homeworkInput.trim()}
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
               >
                 {isSubmitting ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  "Send Assignment"
-                )}
+                  <Loader2 size={16} className="animate-spin mr-2" />
+                ) : null}{" "}
+                Send Assignment
               </Button>
             </form>
 
-            <div className="space-y-3">
+            <div className="space-y-3 pt-2">
               <h4 className="font-bold text-sm text-foreground border-b border-border pb-2">
-                Past Lessons Reference
+                Past Completed Lessons & Assignments
               </h4>
-              <div className="max-h-[250px] overflow-y-auto pr-2 space-y-2">
+              <div className="max-h-[220px] overflow-y-auto pr-2 space-y-2">
                 {pastLessons.length > 0 ? (
-                  pastLessons.map((l: any) => (
-                    <div
-                      key={l.id}
-                      className="p-3 bg-muted/50 rounded-lg border border-border text-sm"
-                    >
-                      <p className="font-semibold">
-                        {new Date(l.lesson_date).toLocaleDateString()} -{" "}
-                        {l.topic}
-                      </p>
-                      <p className="text-muted-foreground mt-1 text-xs">
-                        {l.teacher_notes || "No notes."}
-                      </p>
-                    </div>
-                  ))
+                  pastLessons.map((l: any) => {
+                    const isHomework =
+                      l.topic === "Completed Practice Assignment" ||
+                      l.lesson_type === "homework";
+                    return (
+                      <div
+                        key={l.id}
+                        className={`p-3 rounded-lg border text-sm ${isHomework ? "bg-emerald-500/5 border-emerald-500/20" : "bg-muted/50 border-border"}`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="font-semibold text-xs text-foreground flex items-center gap-1.5">
+                            {isHomework ? (
+                              <CheckCircle2
+                                size={13}
+                                className="text-emerald-500"
+                              />
+                            ) : (
+                              <FileText size={13} className="text-primary" />
+                            )}
+                            {new Date(l.lesson_date).toLocaleDateString()}
+                          </p>
+                          <span
+                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isHomework ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-muted text-muted-foreground"}`}
+                          >
+                            {l.topic || "Lesson"}
+                          </span>
+                        </div>
+                        <p className="text-muted-foreground text-xs whitespace-pre-wrap pl-4">
+                          {l.teacher_notes || "No notes."}
+                        </p>
+                      </div>
+                    );
+                  })
                 ) : (
                   <p className="text-xs text-muted-foreground italic">
-                    No completed lessons yet.
+                    No completed lessons or assignments yet.
                   </p>
                 )}
               </div>

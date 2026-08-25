@@ -11,6 +11,7 @@ export default async function DashboardPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
   if (!user) redirect("/");
 
   const adminEmail = process.env.ADMIN_EMAIL;
@@ -49,13 +50,16 @@ export default async function DashboardPage({
   const nowMs = Date.now();
   const upcomingAll = allLessons
     .filter((l: any) => {
+      // EXCLUDE HOMEWORK AND CANCELED LESSONS FROM THE SCHEDULE CALENDAR
       if (
         l.status === "completed" ||
         l.status === "declined" ||
         l.status.includes("canceled") ||
-        l.status.startsWith("notif_")
+        l.status.startsWith("notif_") ||
+        l.status === "pending_homework"
       )
         return false;
+
       const lessonEndMs =
         new Date(l.lesson_date).getTime() + (l.duration || 60) * 60000;
       return lessonEndMs >= nowMs;
@@ -80,6 +84,7 @@ export default async function DashboardPage({
           </p>
         </div>
       </div>
+
       <ParentTabs
         activeStudents={activeStudents}
         deletedStudents={deletedStudents}
